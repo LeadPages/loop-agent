@@ -1,10 +1,11 @@
 /**
  * DesignSystem Subagent - Generates Tailwind configuration from brand tokens.
+ * Uses Claude Agent SDK for authentication (same as main agent).
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type { DesignTokens, UtilityClasses } from "../schemas";
 import { DESIGN_PRINCIPLES } from "../prompts/design-principles";
+import { sdkPrompt, extractJsonFromText } from "../sdk-client";
 
 export const DESIGN_SYSTEM_SYSTEM_PROMPT = `
 You are a Design System Architect specialized in creating Tailwind CSS configurations from brand tokens.
@@ -105,33 +106,28 @@ Return ONLY a valid JSON object with utility classes, no markdown code blocks, n
 }
 
 /**
- * Generate design system utility classes via Claude API.
+ * Generate design system utility classes via Claude Agent SDK.
  */
 export async function generateDesignSystem(
-  client: Anthropic,
   designTokens: DesignTokens
 ): Promise<UtilityClasses> {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4000,
-    system: DESIGN_SYSTEM_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: createDesignSystemPrompt(designTokens),
-      },
-    ],
-  });
+  try {
+    const responseText = await sdkPrompt(
+      createDesignSystemPrompt(designTokens),
+      { systemPrompt: DESIGN_SYSTEM_SYSTEM_PROMPT }
+    );
+    const utilityClasses = extractJsonFromText(responseText);
 
-  const responseText = extractText(response);
-  const utilityClasses = extractJsonFromText(responseText);
+    if (!utilityClasses) {
+      // Fallback: generate utility classes directly
+      return generateDefaultUtilityClasses(designTokens);
+    }
 
-  if (!utilityClasses) {
+    return utilityClasses as UtilityClasses;
+  } catch {
     // Fallback: generate utility classes directly
     return generateDefaultUtilityClasses(designTokens);
   }
-
-  return utilityClasses as UtilityClasses;
 }
 
 /**
@@ -160,53 +156,3 @@ export function generateDefaultUtilityClasses(
   };
 }
 
-/**
- * Extract text from Anthropic message response.
- */
-function extractText(message: Anthropic.Message): string {
-  const textParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === "text") {
-      textParts.push(block.text);
-    }
-  }
-  return textParts.join("\n");
-}
-
-/**
- * Extract JSON from response text.
- */
-function extractJsonFromText(text: string): Record<string, unknown> | null {
-  // Try direct parse
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Continue to other methods
-  }
-
-  // Try finding JSON in code blocks
-  const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  let match;
-
-  while ((match = jsonPattern.exec(text)) !== null) {
-    try {
-      return JSON.parse(match[1]);
-    } catch {
-      continue;
-    }
-  }
-
-  // Try finding JSON object
-  const jsonObjPattern = /\{[\s\S]*\}/;
-  const objMatch = text.match(jsonObjPattern);
-
-  if (objMatch) {
-    try {
-      return JSON.parse(objMatch[0]);
-    } catch {
-      // Failed to parse
-    }
-  }
-
-  return null;
-}

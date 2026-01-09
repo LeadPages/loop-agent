@@ -1,8 +1,8 @@
 /**
  * Brand Kit Generator - Generates brand kits from unstructured text input.
+ * Uses Claude Agent SDK for authentication (same as main agent).
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type { BrandKit, BrandKitResult } from "./schemas";
 import {
   getBrandKitSystemPrompt,
@@ -14,6 +14,7 @@ import {
   getDefaultTypographyScale,
   getDefaultSpacingScale,
 } from "./prompts/industry-templates";
+import { sdkPrompt, extractJsonFromText } from "./sdk-client";
 
 /**
  * Generate a brand kit from unstructured text input.
@@ -22,28 +23,19 @@ export async function generateBrandKit(
   unstructuredText: string,
   industryHint?: string
 ): Promise<BrandKitResult> {
-  const client = new Anthropic();
-
   // Get industry context if available
   const industryContext = industryHint
     ? JSON.stringify(INDUSTRY_TEMPLATES[industryHint.toLowerCase()] || {})
     : "";
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4000,
-    system:
-      getBrandKitSystemPrompt() +
-      (industryContext ? `\n\nIndustry Context:\n${industryContext}` : ""),
-    messages: [
-      {
-        role: "user",
-        content: getBrandKitExtractionPrompt(unstructuredText),
-      },
-    ],
-  });
+  const systemPrompt =
+    getBrandKitSystemPrompt() +
+    (industryContext ? `\n\nIndustry Context:\n${industryContext}` : "");
 
-  const responseText = extractText(response);
+  const userPrompt = getBrandKitExtractionPrompt(unstructuredText);
+
+  // Use SDK client (same auth as main agent)
+  const responseText = await sdkPrompt(userPrompt, { systemPrompt });
   const rawBrandKit = extractJsonFromText(responseText);
 
   if (!rawBrandKit) {
@@ -320,53 +312,3 @@ function calculateConfidence(
   return Math.max(0, Math.min(1, confidence));
 }
 
-/**
- * Extract text from Anthropic message response.
- */
-function extractText(message: Anthropic.Message): string {
-  const textParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === "text") {
-      textParts.push(block.text);
-    }
-  }
-  return textParts.join("\n");
-}
-
-/**
- * Extract JSON from response text.
- */
-function extractJsonFromText(text: string): Record<string, unknown> | null {
-  // Try direct parse
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Continue to other methods
-  }
-
-  // Try finding JSON in code blocks
-  const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  let match;
-
-  while ((match = jsonPattern.exec(text)) !== null) {
-    try {
-      return JSON.parse(match[1]);
-    } catch {
-      continue;
-    }
-  }
-
-  // Try finding JSON object
-  const jsonObjPattern = /\{[\s\S]*\}/;
-  const objMatch = text.match(jsonObjPattern);
-
-  if (objMatch) {
-    try {
-      return JSON.parse(objMatch[0]);
-    } catch {
-      // Failed to parse
-    }
-  }
-
-  return null;
-}

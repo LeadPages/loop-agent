@@ -1,14 +1,15 @@
 /**
  * HTMLGenerator Subagent - Builds HTML using only div, img, a, button with Tailwind classes.
+ * Uses Claude Agent SDK for authentication (same as main agent).
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type {
   ContentStructure,
   UtilityClasses,
   HTMLGenerationResult,
 } from "../schemas";
 import { RESPONSIVE_GUIDELINES } from "../prompts/responsive-guidelines";
+import { sdkPrompt, extractJsonFromText } from "../sdk-client";
 
 export const HTML_GENERATOR_SYSTEM_PROMPT = `
 You are an HTML Generator specialized in building landing pages with constrained elements.
@@ -185,31 +186,18 @@ Return ONLY a valid JSON object, no markdown code blocks, no explanations.
 }
 
 /**
- * Generate HTML via Claude API.
+ * Generate HTML via Claude Agent SDK.
  */
 export async function generateHtml(
-  client: Anthropic,
   utilityClasses: UtilityClasses,
   contentStructure: ContentStructure,
   brandName: string
 ): Promise<HTMLGenerationResult> {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 16000,
-    system: HTML_GENERATOR_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: createHtmlGeneratorPrompt(
-          contentStructure,
-          utilityClasses,
-          brandName
-        ),
-      },
-    ],
-  });
+  const responseText = await sdkPrompt(
+    createHtmlGeneratorPrompt(contentStructure, utilityClasses, brandName),
+    { systemPrompt: HTML_GENERATOR_SYSTEM_PROMPT }
+  );
 
-  const responseText = extractText(response);
   const htmlResult = extractJsonFromText(responseText);
 
   if (!htmlResult || !htmlResult.html) {
@@ -219,55 +207,3 @@ export async function generateHtml(
   return htmlResult as unknown as HTMLGenerationResult;
 }
 
-/**
- * Extract text from Anthropic message response.
- */
-function extractText(message: Anthropic.Message): string {
-  const textParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === "text") {
-      textParts.push(block.text);
-    }
-  }
-  return textParts.join("\n");
-}
-
-/**
- * Extract JSON from response text.
- */
-function extractJsonFromText(
-  text: string
-): Record<string, unknown> | null {
-  // Try direct parse
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Continue to other methods
-  }
-
-  // Try finding JSON in code blocks
-  const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  let match;
-
-  while ((match = jsonPattern.exec(text)) !== null) {
-    try {
-      return JSON.parse(match[1]);
-    } catch {
-      continue;
-    }
-  }
-
-  // Try finding JSON object
-  const jsonObjPattern = /\{[\s\S]*\}/;
-  const objMatch = text.match(jsonObjPattern);
-
-  if (objMatch) {
-    try {
-      return JSON.parse(objMatch[0]);
-    } catch {
-      // Failed to parse
-    }
-  }
-
-  return null;
-}

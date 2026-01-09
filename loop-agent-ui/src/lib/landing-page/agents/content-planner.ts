@@ -1,10 +1,11 @@
 /**
  * ContentPlanner Subagent - Structures landing page sections and content hierarchy.
+ * Uses Claude Agent SDK for authentication (same as main agent).
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type { ContentStructure } from "../schemas";
 import { COMPOSITION_PATTERNS } from "../prompts/composition-patterns";
+import { sdkPrompt, extractJsonFromText } from "../sdk-client";
 
 export const CONTENT_PLANNER_SYSTEM_PROMPT = `
 You are a Content Planner specialized in structuring landing page sections and content hierarchy.
@@ -148,29 +149,17 @@ Return ONLY a valid JSON object with the sections array, no markdown code blocks
 }
 
 /**
- * Plan content structure via Claude API.
+ * Plan content structure via Claude Agent SDK.
  */
 export async function planContent(
-  client: Anthropic,
   designTokens: { brandPersonality: string[] },
   requirements: string
 ): Promise<ContentStructure> {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4000,
-    system: CONTENT_PLANNER_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: createContentPlannerPrompt(
-          requirements,
-          designTokens.brandPersonality
-        ),
-      },
-    ],
-  });
+  const responseText = await sdkPrompt(
+    createContentPlannerPrompt(requirements, designTokens.brandPersonality),
+    { systemPrompt: CONTENT_PLANNER_SYSTEM_PROMPT }
+  );
 
-  const responseText = extractText(response);
   const contentStructure = extractJsonFromText(responseText);
 
   if (!contentStructure) {
@@ -180,53 +169,3 @@ export async function planContent(
   return contentStructure as unknown as ContentStructure;
 }
 
-/**
- * Extract text from Anthropic message response.
- */
-function extractText(message: Anthropic.Message): string {
-  const textParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === "text") {
-      textParts.push(block.text);
-    }
-  }
-  return textParts.join("\n");
-}
-
-/**
- * Extract JSON from response text.
- */
-function extractJsonFromText(text: string): Record<string, unknown> | null {
-  // Try direct parse
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Continue to other methods
-  }
-
-  // Try finding JSON in code blocks
-  const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  let match;
-
-  while ((match = jsonPattern.exec(text)) !== null) {
-    try {
-      return JSON.parse(match[1]);
-    } catch {
-      continue;
-    }
-  }
-
-  // Try finding JSON object
-  const jsonObjPattern = /\{[\s\S]*\}/;
-  const objMatch = text.match(jsonObjPattern);
-
-  if (objMatch) {
-    try {
-      return JSON.parse(objMatch[0]);
-    } catch {
-      // Failed to parse
-    }
-  }
-
-  return null;
-}

@@ -10,7 +10,29 @@ export async function GET(
   try {
     const { id } = await params;
     const workspacePath = getWorkspacePath(id);
-    const htmlPath = path.join(workspacePath, "generated.html");
+
+    // Get filename from query param, or find the latest landing page file
+    const { searchParams } = new URL(request.url);
+    let filename = searchParams.get("file");
+
+    if (!filename) {
+      // Find the most recent landing-page-*.html file
+      const files = fs.readdirSync(workspacePath)
+        .filter(f => f.startsWith("landing-page-") && f.endsWith(".html"))
+        .sort()
+        .reverse();
+
+      if (files.length > 0) {
+        filename = files[0];
+      } else {
+        // Fallback to legacy generated.html
+        filename = "generated.html";
+      }
+    }
+
+    // Sanitize filename to prevent path traversal
+    const safeName = path.basename(filename);
+    const htmlPath = path.join(workspacePath, safeName);
 
     if (!fs.existsSync(htmlPath)) {
       return NextResponse.json(

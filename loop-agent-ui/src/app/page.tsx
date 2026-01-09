@@ -13,11 +13,14 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState<Set<string>>(new Set()); // Per-session loading state
+  const [previewFiles, setPreviewFiles] = useState<Record<string, string>>({}); // sessionId -> filename
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const activeMessages = activeSessionId ? messages[activeSessionId] || [] : [];
   const activeAgent = agents.find((a) => a.id === activeSession?.agentId);
+  const activePreviewFile = activeSessionId ? previewFiles[activeSessionId] : null;
+  const isActiveSessionLoading = activeSessionId ? loadingSessions.has(activeSessionId) : false;
 
   // Fetch agents on mount
   useEffect(() => {
@@ -73,7 +76,8 @@ export default function Dashboard() {
         [activeSessionId]: [...(prev[activeSessionId] || []), userMessage],
       }));
 
-      setIsLoading(true);
+      // Mark this session as loading (doesn't affect other sessions)
+      setLoadingSessions((prev) => new Set(prev).add(activeSessionId));
 
       try {
         const response = await fetch(`/api/sessions/${activeSessionId}/message`, {
@@ -165,6 +169,13 @@ export default function Dashboard() {
                         : s
                     )
                   );
+                  // Track preview file if one was generated
+                  if (parsed.previewFile) {
+                    setPreviewFiles((prev) => ({
+                      ...prev,
+                      [activeSessionId]: parsed.previewFile,
+                    }));
+                  }
                 }
               } catch {
                 // Ignore parse errors for incomplete chunks
@@ -187,7 +198,12 @@ export default function Dashboard() {
           ],
         }));
       } finally {
-        setIsLoading(false);
+        // Remove this session from loading set
+        setLoadingSessions((prev) => {
+          const next = new Set(prev);
+          next.delete(activeSessionId);
+          return next;
+        });
       }
     },
     [activeSessionId]
@@ -204,17 +220,38 @@ export default function Dashboard() {
         selectedAgentId={selectedAgentId}
         onSelectAgent={setSelectedAgentId}
       />
-      <main className="flex-1 h-full overflow-hidden">
+      <main className="flex-1 h-full overflow-hidden flex">
         {activeSession ? (
-          <Chat
-            messages={activeMessages}
-            isLoading={isLoading}
-            onSendMessage={handleSendMessage}
-            sessionName={activeSession.name}
-            agent={activeAgent}
-          />
+          <>
+            {/* Chat panel - takes full width if no preview, half if there is */}
+            <div className={activePreviewFile ? "w-1/2 h-full border-r border-border" : "w-full h-full"}>
+              <Chat
+                messages={activeMessages}
+                isLoading={isActiveSessionLoading}
+                onSendMessage={handleSendMessage}
+                sessionName={activeSession.name}
+                agent={activeAgent}
+              />
+            </div>
+            {/* Preview panel - only shown when there's a generated file */}
+            {activePreviewFile && (
+              <div className="w-1/2 h-full flex flex-col">
+                <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border">
+                  <h2 className="text-lg font-semibold">Preview</h2>
+                  <span className="text-sm text-muted-foreground">{activePreviewFile}</span>
+                </div>
+                <div className="flex-1 bg-white">
+                  <iframe
+                    src={`/api/sessions/${activeSessionId}/preview?file=${encodeURIComponent(activePreviewFile)}`}
+                    className="w-full h-full border-0"
+                    title="Landing Page Preview"
+                  />
+                </div>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <div className="text-center">
               <h2 className="text-2xl font-semibold mb-2">Welcome to Loop Agent</h2>
               <p className="text-muted-foreground mb-4">

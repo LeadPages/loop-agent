@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "Bash(curl:*)",
       "Bash(pkill:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

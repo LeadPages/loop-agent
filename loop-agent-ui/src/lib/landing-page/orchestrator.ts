@@ -1,9 +1,8 @@
 /**
  * Orchestrator - Multi-agent coordination for landing page generation.
- * Uses Anthropic API tool calling (avoids SDK MCP subprocess issues).
+ * Uses Claude Agent SDK for authentication (same as main agent).
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type {
   BrandKit,
   DesignTokens,
@@ -41,7 +40,6 @@ export class LandingPageOrchestrator {
   private requirements: string;
   private model: string;
   private maxAttempts: number;
-  private client: Anthropic;
 
   // Generation state
   private state: GenerationState = "init";
@@ -56,9 +54,6 @@ export class LandingPageOrchestrator {
     this.requirements = options.requirements;
     this.model = options.model || "claude-sonnet-4-20250514";
     this.maxAttempts = options.maxAttempts || 3;
-
-    // Initialize Anthropic client
-    this.client = new Anthropic();
   }
 
   /**
@@ -172,7 +167,7 @@ export class LandingPageOrchestrator {
     }
 
     try {
-      return await generateDesignSystem(this.client, this.designTokens);
+      return await generateDesignSystem(this.designTokens);
     } catch {
       // Fallback to default utility classes
       return generateDefaultUtilityClasses(this.designTokens);
@@ -187,7 +182,7 @@ export class LandingPageOrchestrator {
       throw new Error("Design tokens not available");
     }
 
-    return await planContent(this.client, this.designTokens, this.requirements);
+    return await planContent(this.designTokens, this.requirements);
   }
 
   /**
@@ -202,7 +197,6 @@ export class LandingPageOrchestrator {
     }
 
     return await generateHtml(
-      this.client,
       this.utilityClasses,
       this.contentStructure,
       this.brandKit.name

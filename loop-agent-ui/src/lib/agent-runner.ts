@@ -16,6 +16,7 @@ export interface SSEEvent {
   costUsd?: number;
   turns?: number;
   result?: string;
+  previewFile?: string; // Filename of generated preview (for landing page generator)
 }
 
 /**
@@ -200,14 +201,16 @@ ${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
 
     finalHtml = orchestrator.getFinalHtml() || "";
 
-    // Step 3: Write to workspace
-    const outputPath = path.join(cwd, "generated.html");
+    // Step 3: Write to workspace with timestamped filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const filename = `landing-page-${timestamp}.html`;
+    const outputPath = path.join(cwd, filename);
     fs.writeFileSync(outputPath, finalHtml);
 
     yield {
       type: "tool",
       toolName: "Write",
-      content: `Wrote ${finalHtml.length} characters to generated.html`,
+      content: `Wrote ${finalHtml.length} characters to ${filename}`,
     };
 
     yield {
@@ -216,9 +219,7 @@ ${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
 
 **Sections:** ${sections.join(", ")}
 
-**File:** generated.html (${finalHtml.length} characters)
-
-The HTML has been written to your workspace. You can preview it by opening the generated.html file in a browser.
+**File:** ${filename} (${finalHtml.length} characters)
 
 The page includes:
 - Responsive design (mobile-first)
@@ -233,6 +234,7 @@ The page includes:
       result: "Landing page generated",
       costUsd: 0, // TODO: Track actual cost
       turns: 1,
+      previewFile: filename,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
