@@ -1,0 +1,10 @@
+# Railway configuration for monorepo
+# Each service should configure its own railway.toml in its directory
+# This root file is for shared settings
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

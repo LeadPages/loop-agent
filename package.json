@@ -1,0 +1,21 @@
+{
+  "name": "loop-agent-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for Loop Agent SDK services",
+  "workspaces": [
+    "loop-agent",
+    "loop-agent-ui"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspace=loop-agent-ui",
+    "start:agent": "npm run start --workspace=loop-agent",
+    "start:ui": "npm run start --workspace=loop-agent-ui",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

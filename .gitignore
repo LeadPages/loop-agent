@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Next.js
+.next/
+out/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+
+# Docker
+.docker/
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Railway
+.railway/
+
+# Lock files from individual packages (use root pnpm-lock.yaml)
+loop-agent/package-lock.json
+loop-agent-ui/package-lock.json

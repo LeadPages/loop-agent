@@ -1,0 +1,28 @@
+{
+  "name": "loop-agent",
+  "version": "1.0.0",
+  "description": "A coding agent built with the Claude Agent SDK",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node --import tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "claude",
+    "agent",
+    "sdk",
+    "coding"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
