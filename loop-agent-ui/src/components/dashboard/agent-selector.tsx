@@ -31,6 +31,8 @@ export function AgentSelector({
         return "⚡";
       case "shield":
         return "🛡️";
+      case "sparkles":
+        return "✨";
       default:
         return "🤖";
     }
@@ -44,6 +46,8 @@ export function AgentSelector({
         return "text-green-500";
       case "blue":
         return "text-blue-500";
+      case "purple":
+        return "text-purple-500";
       default:
         return "text-gray-500";
     }
@@ -95,6 +99,8 @@ export function AgentBadge({ agent }: { agent: Agent }) {
         return "⚡";
       case "shield":
         return "🛡️";
+      case "sparkles":
+        return "✨";
       default:
         return "🤖";
     }
@@ -108,6 +114,8 @@ export function AgentBadge({ agent }: { agent: Agent }) {
         return "bg-green-500/10 text-green-500 border-green-500/20";
       case "blue":
         return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "purple":
+        return "bg-purple-500/10 text-purple-500 border-purple-500/20";
       default:
         return "bg-gray-500/10 text-gray-500 border-gray-500/20";
     }

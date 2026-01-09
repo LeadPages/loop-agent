@@ -1,6 +1,9 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import fs from "fs";
+import path from "path";
 import { createWorkspace } from "./workspace";
-import { getAgentConfig, DEFAULT_AGENT_ID, type AgentConfig } from "./agents";
+import { getAgentConfig, DEFAULT_AGENT_ID } from "./agents";
+import { generateBrandKit, LandingPageOrchestrator } from "./landing-page";
 
 // Types for SSE events we emit
 export interface SSEEvent {
@@ -26,6 +29,12 @@ export async function* runAgent(
 ): AsyncGenerator<SSEEvent> {
   // Get agent configuration
   const agentConfig = getAgentConfig(agentId) || getAgentConfig(DEFAULT_AGENT_ID)!;
+
+  // Special handling for landing page generator
+  if (agentId === "landing-page-generator") {
+    yield* runLandingPageGenerator(sessionId, prompt);
+    return;
+  }
 
   // Ensure workspace exists
   const cwd = createWorkspace(sessionId);
@@ -120,4 +129,116 @@ export async function* runAgent(
  */
 export function formatSSE(event: SSEEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/**
+ * Run the landing page generator with multi-agent orchestration
+ */
+async function* runLandingPageGenerator(
+  sessionId: string,
+  prompt: string
+): AsyncGenerator<SSEEvent> {
+  const cwd = createWorkspace(sessionId);
+
+  try {
+    yield {
+      type: "system",
+      sessionId,
+      model: "claude-sonnet-4-20250514",
+      tools: ["LandingPageOrchestrator"],
+    };
+
+    // Step 1: Generate brand kit
+    yield {
+      type: "assistant",
+      content: "Analyzing your input to extract brand information...",
+    };
+
+    yield {
+      type: "tool",
+      toolName: "BrandKitGenerator",
+      content: "Extracting brand kit from unstructured text...",
+    };
+
+    const { brandKit, confidence, warnings } = await generateBrandKit(prompt);
+
+    yield {
+      type: "assistant",
+      content: `Brand kit extracted (${Math.round(confidence * 100)}% confidence):
+- Business: ${brandKit.name}
+- Colors: Primary ${brandKit.colors.primary}, Secondary ${brandKit.colors.secondary}, Accent ${brandKit.colors.accent}
+- Typography: ${brandKit.typography.headingFont} / ${brandKit.typography.bodyFont}
+- Style: ${brandKit.personalityTraits.join(", ")}
+${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
+    };
+
+    // Step 2: Run the orchestrator
+    yield {
+      type: "assistant",
+      content: "Generating landing page with multi-agent orchestration...",
+    };
+
+    const orchestrator = new LandingPageOrchestrator({
+      brandKit,
+      requirements: prompt,
+    });
+
+    let finalHtml = "";
+    let sections: string[] = [];
+
+    for await (const progress of orchestrator.generate()) {
+      yield {
+        type: "tool",
+        toolName: "LandingPageOrchestrator",
+        content: `[${progress.state}] ${progress.message}`,
+      };
+
+      if (progress.state === "complete" && progress.details?.sections) {
+        sections = progress.details.sections as string[];
+      }
+    }
+
+    finalHtml = orchestrator.getFinalHtml() || "";
+
+    // Step 3: Write to workspace
+    const outputPath = path.join(cwd, "generated.html");
+    fs.writeFileSync(outputPath, finalHtml);
+
+    yield {
+      type: "tool",
+      toolName: "Write",
+      content: `Wrote ${finalHtml.length} characters to generated.html`,
+    };
+
+    yield {
+      type: "assistant",
+      content: `Landing page generated successfully!
+
+**Sections:** ${sections.join(", ")}
+
+**File:** generated.html (${finalHtml.length} characters)
+
+The HTML has been written to your workspace. You can preview it by opening the generated.html file in a browser.
+
+The page includes:
+- Responsive design (mobile-first)
+- Tailwind CSS via CDN
+- Brand-consistent colors and typography
+- Proper hover states on interactive elements
+- Only div, img, a, button elements (semantic markup via Tailwind)`,
+    };
+
+    yield {
+      type: "result",
+      result: "Landing page generated",
+      costUsd: 0, // TODO: Track actual cost
+      turns: 1,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    yield {
+      type: "error",
+      content: `Landing page generation failed: ${errorMessage}`,
+    };
+  }
 }
