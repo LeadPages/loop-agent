@@ -7,8 +7,8 @@ RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -24,12 +24,15 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+ENV PATH="/usr/local/bin:$PATH"
 
 # Install runtime dependencies for better-sqlite3
 RUN apk add --no-cache libstdc++
+
+# Install Claude Code CLI globally and ensure it's in PATH
+RUN npm install -g @anthropic-ai/claude-code && \
+    which claude && \
+    claude --version
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

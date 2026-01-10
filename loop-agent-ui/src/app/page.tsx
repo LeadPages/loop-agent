@@ -5,16 +5,46 @@ import { Sidebar, Session } from "@/components/dashboard/sidebar";
 import { Chat, Message } from "@/components/dashboard/chat";
 import { type Agent } from "@/components/dashboard/agent-selector";
 
-const DEFAULT_AGENT_ID = "loop-agent-safe";
+const DEFAULT_AGENT_ID = "landing-page-generator";
+const DEFAULT_MODEL_ID = "claude-sonnet-4-20250514";
+const ACCESS_CODE = process.env.NEXT_PUBLIC_ACCESS_CODE || "demo2024";
+
+export const AVAILABLE_MODELS = [
+  { id: "claude-sonnet-4-20250514", name: "Sonnet", description: "Balanced" },
+  { id: "claude-opus-4-5-20251101", name: "Opus", description: "Most capable" },
+];
 
 export default function Dashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accessCodeInput, setAccessCodeInput] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(DEFAULT_AGENT_ID);
+  const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_MODEL_ID);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [loadingSessions, setLoadingSessions] = useState<Set<string>>(new Set()); // Per-session loading state
   const [previewFiles, setPreviewFiles] = useState<Record<string, string>>({}); // sessionId -> filename
+  const [previewKey, setPreviewKey] = useState(0); // Key to force iframe reload
+
+  // Check for existing auth on mount
+  useEffect(() => {
+    const storedAuth = localStorage.getItem("lp-auth");
+    if (storedAuth === ACCESS_CODE) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = useCallback(() => {
+    if (accessCodeInput === ACCESS_CODE) {
+      localStorage.setItem("lp-auth", accessCodeInput);
+      setIsAuthenticated(true);
+      setLoginError("");
+    } else {
+      setLoginError("Invalid access code");
+    }
+  }, [accessCodeInput]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const activeMessages = activeSessionId ? messages[activeSessionId] || [] : [];
@@ -33,6 +63,10 @@ export default function Dashboard() {
         }
       })
       .catch(console.error);
+  }, []);
+
+  const handleReloadPreview = useCallback(() => {
+    setPreviewKey((prev) => prev + 1);
   }, []);
 
   const handleCreateSession = useCallback(async () => {
@@ -83,7 +117,7 @@ export default function Dashboard() {
         const response = await fetch(`/api/sessions/${activeSessionId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: content }),
+          body: JSON.stringify({ message: content, model: selectedModelId }),
         });
 
         if (!response.ok) {
@@ -206,8 +240,42 @@ export default function Dashboard() {
         });
       }
     },
-    [activeSessionId]
+    [activeSessionId, selectedModelId]
   );
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen bg-background items-center justify-center">
+        <div className="w-full max-w-sm p-8 space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Landing Page Generator</h1>
+            <p className="text-muted-foreground mt-2">Enter access code to continue</p>
+          </div>
+          <div className="space-y-4">
+            <input
+              type="password"
+              value={accessCodeInput}
+              onChange={(e) => setAccessCodeInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              placeholder="Access code"
+              className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              autoFocus
+            />
+            {loginError && (
+              <p className="text-sm text-red-500">{loginError}</p>
+            )}
+            <button
+              onClick={handleLogin}
+              className="w-full px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Enter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -219,6 +287,9 @@ export default function Dashboard() {
         agents={agents}
         selectedAgentId={selectedAgentId}
         onSelectAgent={setSelectedAgentId}
+        models={AVAILABLE_MODELS}
+        selectedModelId={selectedModelId}
+        onSelectModel={setSelectedModelId}
       />
       <main className="flex-1 h-full overflow-hidden flex">
         {activeSession ? (
@@ -238,10 +309,23 @@ export default function Dashboard() {
               <div className="w-1/2 h-full flex flex-col">
                 <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border">
                   <h2 className="text-lg font-semibold">Preview</h2>
-                  <span className="text-sm text-muted-foreground">{activePreviewFile}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{activePreviewFile}</span>
+                    <button
+                      onClick={handleReloadPreview}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                      title="Reload preview"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex-1 bg-white">
                   <iframe
+                    key={previewKey}
                     src={`/api/sessions/${activeSessionId}/preview?file=${encodeURIComponent(activePreviewFile)}`}
                     className="w-full h-full border-0"
                     title="Landing Page Preview"

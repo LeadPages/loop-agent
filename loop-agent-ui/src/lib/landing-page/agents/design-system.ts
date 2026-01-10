@@ -109,12 +109,13 @@ Return ONLY a valid JSON object with utility classes, no markdown code blocks, n
  * Generate design system utility classes via Claude Agent SDK.
  */
 export async function generateDesignSystem(
-  designTokens: DesignTokens
+  designTokens: DesignTokens,
+  model?: string
 ): Promise<UtilityClasses> {
   try {
     const responseText = await sdkPrompt(
       createDesignSystemPrompt(designTokens),
-      { systemPrompt: DESIGN_SYSTEM_SYSTEM_PROMPT }
+      { systemPrompt: DESIGN_SYSTEM_SYSTEM_PROMPT, model }
     );
     const utilityClasses = extractJsonFromText(responseText);
 

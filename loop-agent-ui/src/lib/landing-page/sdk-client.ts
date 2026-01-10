@@ -38,6 +38,10 @@ export async function sdkPrompt(
       allowDangerouslySkipPermissions: true,
       // Single turn only
       maxTurns: 1,
+      // Path to Claude Code executable (only set in Docker/Railway, let SDK find it locally)
+      ...(process.env.CLAUDE_CODE_PATH || process.env.RAILWAY_ENVIRONMENT
+        ? { pathToClaudeCodeExecutable: process.env.CLAUDE_CODE_PATH || "/usr/local/bin/claude" }
+        : {}),
     },
   })) {
     if (message.type === "assistant") {

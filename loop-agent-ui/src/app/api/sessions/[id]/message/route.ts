@@ -16,7 +16,7 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { message } = body;
+  const { message, model } = body;
 
   if (!message) {
     return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -40,10 +40,22 @@ export async function POST(
       let totalCost = session?.costUsd || 0;
       let totalTurns = session?.turns || 0;
       let assistantContent = "";
+      let isStreamClosed = false;
+
+      // Keep-alive heartbeat to prevent connection timeout
+      const heartbeatInterval = setInterval(() => {
+        if (!isStreamClosed) {
+          try {
+            controller.enqueue(encoder.encode(": heartbeat\n\n"));
+          } catch {
+            // Controller may be closed
+          }
+        }
+      }, 15000); // Send heartbeat every 15 seconds
 
       try {
         // Run the real Claude Agent SDK with the session's agent configuration
-        for await (const event of runAgent(id, message, session!.agentId, session?.sessionId ?? undefined)) {
+        for await (const event of runAgent(id, message, session!.agentId, session?.sessionId ?? undefined, model)) {
           // Send SSE event to client
           controller.enqueue(encoder.encode(formatSSE(event)));
 
@@ -87,7 +99,9 @@ export async function POST(
           addMessage(crypto.randomUUID(), id, "assistant", assistantContent);
         }
 
-        // Send done signal
+        // Clean up heartbeat and close stream
+        isStreamClosed = true;
+        clearInterval(heartbeatInterval);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
 
@@ -98,19 +112,27 @@ export async function POST(
           turns: totalTurns,
         });
       } catch (error) {
+        // Clean up heartbeat
+        isStreamClosed = true;
+        clearInterval(heartbeatInterval);
+
         console.error("Stream error:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-        controller.enqueue(
-          encoder.encode(
-            formatSSE({
-              type: "error",
-              content: `An error occurred: ${errorMessage}`,
-            })
-          )
-        );
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        try {
+          controller.enqueue(
+            encoder.encode(
+              formatSSE({
+                type: "error",
+                content: `An error occurred: ${errorMessage}`,
+              })
+            )
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch {
+          // Controller may already be closed
+        }
 
         updateSession(id, { status: "error" });
       }

@@ -153,11 +153,12 @@ Return ONLY a valid JSON object with the sections array, no markdown code blocks
  */
 export async function planContent(
   designTokens: { brandPersonality: string[] },
-  requirements: string
+  requirements: string,
+  model?: string
 ): Promise<ContentStructure> {
   const responseText = await sdkPrompt(
     createContentPlannerPrompt(requirements, designTokens.brandPersonality),
-    { systemPrompt: CONTENT_PLANNER_SYSTEM_PROMPT }
+    { systemPrompt: CONTENT_PLANNER_SYSTEM_PROMPT, model }
   );
 
   const contentStructure = extractJsonFromText(responseText);

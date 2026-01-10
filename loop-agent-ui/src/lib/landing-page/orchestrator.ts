@@ -18,6 +18,7 @@ import {
 } from "./agents/design-system";
 import { planContent } from "./agents/content-planner";
 import { generateHtml } from "./agents/html-generator";
+import { validateAndReplaceImages } from "./image-validator";
 
 export interface OrchestratorOptions {
   brandKit: BrandKit;
@@ -126,12 +127,16 @@ export class LandingPageOrchestrator {
         message: `Generated ${this.htmlDraft.length} characters of HTML`,
         details: {
           htmlLength: this.htmlDraft.length,
-          imagesNeeded: htmlResult.imagesNeeded?.length || 0,
         },
       };
 
-      // For now, skip image generation (can be added later)
-      this.finalHtml = this.htmlDraft;
+      // Validate images and replace broken Unsplash URLs with fallbacks
+      yield {
+        state: "generating_html",
+        message: "Validating images...",
+      };
+
+      this.finalHtml = await validateAndReplaceImages(this.htmlDraft);
 
       this.state = "complete";
       yield {
@@ -167,7 +172,7 @@ export class LandingPageOrchestrator {
     }
 
     try {
-      return await generateDesignSystem(this.designTokens);
+      return await generateDesignSystem(this.designTokens, this.model);
     } catch {
       // Fallback to default utility classes
       return generateDefaultUtilityClasses(this.designTokens);
@@ -182,7 +187,7 @@ export class LandingPageOrchestrator {
       throw new Error("Design tokens not available");
     }
 
-    return await planContent(this.designTokens, this.requirements);
+    return await planContent(this.designTokens, this.requirements, this.model);
   }
 
   /**
@@ -199,7 +204,8 @@ export class LandingPageOrchestrator {
     return await generateHtml(
       this.utilityClasses,
       this.contentStructure,
-      this.brandKit.name
+      this.brandKit,
+      this.model
     );
   }
 

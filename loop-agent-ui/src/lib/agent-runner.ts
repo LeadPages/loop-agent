@@ -26,19 +26,22 @@ export async function* runAgent(
   sessionId: string,
   prompt: string,
   agentId: string,
-  sdkSessionId?: string
+  sdkSessionId?: string,
+  model?: string
 ): AsyncGenerator<SSEEvent> {
   // Get agent configuration
   const agentConfig = getAgentConfig(agentId) || getAgentConfig(DEFAULT_AGENT_ID)!;
 
   // Special handling for landing page generator
   if (agentId === "landing-page-generator") {
-    yield* runLandingPageGenerator(sessionId, prompt);
+    yield* runLandingPageGenerator(sessionId, prompt, model);
     return;
   }
 
   // Ensure workspace exists
   const cwd = createWorkspace(sessionId);
+
+  console.log(`[agent-runner] Starting agent for session ${sessionId}, agent: ${agentId}, cwd: ${cwd}`);
 
   try {
     // Build query options based on agent config
@@ -49,6 +52,12 @@ export async function* runAgent(
       // For automated workflows, bypass permission prompts
       permissionMode: "bypassPermissions",
       allowDangerouslySkipPermissions: true,
+      // Path to Claude Code executable (only set in Docker/Railway, let SDK find it locally)
+      ...(process.env.CLAUDE_CODE_PATH || process.env.RAILWAY_ENVIRONMENT
+        ? { pathToClaudeCodeExecutable: process.env.CLAUDE_CODE_PATH || "/usr/local/bin/claude" }
+        : {}),
+      // Model selection (if provided)
+      ...(model && { model }),
     };
 
     // Apply workspace restrictions if configured
@@ -62,7 +71,10 @@ export async function* runAgent(
     }
 
     // Run the agent query
+    console.log(`[agent-runner] Calling SDK query with prompt: "${prompt.substring(0, 50)}..."`);
     for await (const message of query({ prompt, options })) {
+      console.log(`[agent-runner] Received message type: ${message.type}`);
+
       switch (message.type) {
         case "system":
           if (message.subtype === "init") {
@@ -117,7 +129,11 @@ export async function* runAgent(
       }
     }
   } catch (error) {
+    console.error(`[agent-runner] Error:`, error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error(`[agent-runner] Error message: ${errorMessage}`);
+    console.error(`[agent-runner] Error stack: ${errorStack}`);
     yield {
       type: "error",
       content: `Agent execution failed: ${errorMessage}`,
@@ -137,15 +153,17 @@ export function formatSSE(event: SSEEvent): string {
  */
 async function* runLandingPageGenerator(
   sessionId: string,
-  prompt: string
+  prompt: string,
+  model?: string
 ): AsyncGenerator<SSEEvent> {
   const cwd = createWorkspace(sessionId);
+  const selectedModel = model || "claude-sonnet-4-20250514";
 
   try {
     yield {
       type: "system",
       sessionId,
-      model: "claude-sonnet-4-20250514",
+      model: selectedModel,
       tools: ["LandingPageOrchestrator"],
     };
 
@@ -182,6 +200,7 @@ ${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
     const orchestrator = new LandingPageOrchestrator({
       brandKit,
       requirements: prompt,
+      model: selectedModel,
     });
 
     let finalHtml = "";

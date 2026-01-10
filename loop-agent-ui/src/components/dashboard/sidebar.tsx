@@ -5,6 +5,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { AgentSelector, type Agent } from "./agent-selector";
 
+export interface Model {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Session {
   id: string;
   name: string;
@@ -23,6 +29,9 @@ interface SidebarProps {
   agents: Agent[];
   selectedAgentId: string;
   onSelectAgent: (agentId: string) => void;
+  models: Model[];
+  selectedModelId: string;
+  onSelectModel: (modelId: string) => void;
 }
 
 export function Sidebar({
@@ -33,6 +42,9 @@ export function Sidebar({
   agents,
   selectedAgentId,
   onSelectAgent,
+  models,
+  selectedModelId,
+  onSelectModel,
 }: SidebarProps) {
   return (
     <div className="flex h-full w-64 flex-col border-r border-border bg-sidebar">
@@ -44,6 +56,33 @@ export function Sidebar({
           selectedAgentId={selectedAgentId}
           onSelectAgent={onSelectAgent}
         />
+      </div>
+
+      {/* Model selector */}
+      <div className="p-4 border-b border-border">
+        <label className="text-xs text-muted-foreground mb-2 block">Model</label>
+        <div className="relative">
+          <select
+            value={selectedModelId}
+            onChange={(e) => onSelectModel(e.target.value)}
+            className={cn(
+              "w-full appearance-none rounded-md border border-input bg-background px-3 py-2 text-sm",
+              "ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "pr-8"
+            )}
+          >
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name} - {model.description}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       {/* Sessions header */}
