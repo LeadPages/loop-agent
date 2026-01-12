@@ -11,7 +11,17 @@
       "Bash(curl:*)",
       "Bash(pkill:*)",
       "Bash(find:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__railway-mcp-server__list-services",
+      "mcp__railway-mcp-server__deploy",
+      "mcp__railway-mcp-server__link-service",
+      "mcp__railway-mcp-server__set-variables",
+      "mcp__railway-mcp-server__get-logs",
+      "mcp__railway-mcp-server__list-deployments"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "railway-mcp-server"
+  ]
 }

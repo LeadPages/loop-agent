@@ -16,6 +16,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Accept build args for NEXT_PUBLIC_* env vars (needed at build time)
+ARG NEXT_PUBLIC_ACCESS_CODE
+ENV NEXT_PUBLIC_ACCESS_CODE=$NEXT_PUBLIC_ACCESS_CODE
+
 # Build the application
 RUN npm run build
 
