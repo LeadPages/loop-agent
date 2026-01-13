@@ -17,7 +17,8 @@
       "mcp__railway-mcp-server__link-service",
       "mcp__railway-mcp-server__set-variables",
       "mcp__railway-mcp-server__get-logs",
-      "mcp__railway-mcp-server__list-deployments"
+      "mcp__railway-mcp-server__list-deployments",
+      "Bash(railway logs:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

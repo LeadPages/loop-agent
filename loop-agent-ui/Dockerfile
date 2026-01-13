@@ -42,8 +42,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Create directories for data and workspaces
-RUN mkdir -p /app/data /tmp/loop-agent-workspaces && \
-    chown -R nextjs:nodejs /app/data /tmp/loop-agent-workspaces
+# /loop-data is the Railway volume mount point
+RUN mkdir -p /app/data /loop-data /tmp/loop-agent-workspaces && \
+    chown -R nextjs:nodejs /app/data /loop-data /tmp/loop-agent-workspaces
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
