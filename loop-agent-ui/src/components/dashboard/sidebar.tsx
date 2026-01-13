@@ -28,6 +28,7 @@ interface SidebarProps {
   onSelectSession: (id: string) => void;
   onCreateSession: () => void;
   onRenameSession: (id: string, newName: string) => void;
+  onDeleteSession: (id: string) => void;
   agents: Agent[];
   selectedAgentId: string;
   onSelectAgent: (agentId: string) => void;
@@ -42,6 +43,7 @@ export function Sidebar({
   onSelectSession,
   onCreateSession,
   onRenameSession,
+  onDeleteSession,
   agents,
   selectedAgentId,
   onSelectAgent,
@@ -111,6 +113,7 @@ export function Sidebar({
                 isActive={session.id === activeSessionId}
                 onClick={() => onSelectSession(session.id)}
                 onRename={(newName) => onRenameSession(session.id, newName)}
+                onDelete={() => onDeleteSession(session.id)}
               />
             ))
           )}
@@ -132,12 +135,14 @@ function SessionItem({
   isActive,
   onClick,
   onRename,
+  onDelete,
 }: {
   session: Session;
   agents: Agent[];
   isActive: boolean;
   onClick: () => void;
   onRename: (newName: string) => void;
+  onDelete: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(session.name);
@@ -169,6 +174,13 @@ function SessionItem({
     }
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Delete "${session.name}"?`)) {
+      onDelete();
+    }
+  };
+
   const statusColor: Record<string, string> = {
     active: "bg-green-500",
     idle: "bg-yellow-500",
@@ -180,10 +192,10 @@ function SessionItem({
   const agentIcon = agent?.icon === "terminal" ? "⚡" : agent?.icon === "shield" ? "🛡️" : "🤖";
 
   return (
-    <button
+    <div
       onClick={onClick}
       className={cn(
-        "w-full text-left p-3 rounded-lg transition-colors",
+        "group w-full text-left p-3 rounded-lg transition-colors cursor-pointer relative",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "hover:bg-sidebar-accent/50"
@@ -214,15 +226,26 @@ function SessionItem({
             {session.name}
           </span>
         )}
-        <span
-          className={cn("w-2 h-2 rounded-full flex-shrink-0", statusColor[session.status] || "bg-gray-500")}
-        />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleDelete}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-opacity"
+            title="Delete session"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <span
+            className={cn("w-2 h-2 rounded-full flex-shrink-0", statusColor[session.status] || "bg-gray-500")}
+          />
+        </div>
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>${session.costUsd.toFixed(4)}</span>
         <span>·</span>
         <span>{session.turns} turns</span>
       </div>
-    </button>
+    </div>
   );
 }

@@ -143,6 +143,35 @@ export default function Dashboard() {
     }
   }, []);
 
+  const handleDeleteSession = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete session");
+
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+
+      // Clear active session if it was deleted
+      if (activeSessionId === id) {
+        setActiveSessionId(null);
+      }
+
+      // Clean up messages and preview for deleted session
+      setMessages((prev) => {
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      });
+      setPreviewFiles((prev) => {
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      });
+    } catch (error) {
+      console.error("Failed to delete session:", error);
+    }
+  }, [activeSessionId]);
+
   const handleCreateSession = useCallback(async () => {
     try {
       const response = await fetch("/api/sessions", {
@@ -359,6 +388,7 @@ export default function Dashboard() {
         onSelectSession={setActiveSessionId}
         onCreateSession={handleCreateSession}
         onRenameSession={handleRenameSession}
+        onDeleteSession={handleDeleteSession}
         agents={agents}
         selectedAgentId={selectedAgentId}
         onSelectAgent={setSelectedAgentId}
