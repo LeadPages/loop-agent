@@ -30,8 +30,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PATH="/usr/local/bin:$PATH"
 
-# Install runtime dependencies for better-sqlite3
-RUN apk add --no-cache libstdc++
+# Install runtime dependencies for better-sqlite3 and su-exec for entrypoint
+RUN apk add --no-cache libstdc++ su-exec
 
 # Install Claude Code CLI globally and ensure it's in PATH
 RUN npm install -g @anthropic-ai/claude-code && \
@@ -53,7 +53,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy native modules from deps stage
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
-USER nextjs
+# Copy entrypoint script
+COPY --chmod=755 docker-entrypoint.sh /docker-entrypoint.sh
 
 EXPOSE 3000
 
@@ -62,4 +63,5 @@ ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_PATH=/app/data/sessions.db
 ENV WORKSPACE_ROOT=/tmp/loop-agent-workspaces
 
-CMD ["node", "server.js"]
+# Run as root initially so entrypoint can fix volume permissions, then switch to nextjs
+CMD ["/docker-entrypoint.sh"]
