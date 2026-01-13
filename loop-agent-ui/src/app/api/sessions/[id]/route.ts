@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, deleteSession, getMessages, updateSession } from "@/lib/agent";
 import { getAgentConfig } from "@/lib/agents";
+import { listWorkspaceFiles } from "@/lib/workspace";
 
 // GET /api/sessions/:id - Get session details with messages and agent info
 export async function GET(
@@ -18,10 +19,15 @@ export async function GET(
   const messages = getMessages(id);
   const agent = getAgentConfig(session.agentId);
 
+  // Find preview file (HTML files in workspace)
+  const workspaceFiles = listWorkspaceFiles(id);
+  const previewFile = workspaceFiles.find((f) => f.endsWith(".html")) || null;
+
   return NextResponse.json({
     ...session,
     messages,
     agent,
+    previewFile,
   });
 }
 

@@ -79,6 +79,48 @@ export default function Dashboard() {
       .catch(console.error);
   }, []);
 
+  // Fetch session details (messages, preview) when selecting a session
+  useEffect(() => {
+    if (!activeSessionId) return;
+
+    // Skip if we already have messages for this session
+    if (messages[activeSessionId]?.length > 0) return;
+
+    fetch(`/api/sessions/${activeSessionId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Load messages
+        if (data.messages && data.messages.length > 0) {
+          const loadedMessages: Message[] = data.messages.map((m: {
+            id: string;
+            type: string;
+            content: string;
+            tool_name?: string;
+            created_at: string;
+          }) => ({
+            id: m.id,
+            type: m.type as Message["type"],
+            content: m.content,
+            toolName: m.tool_name || undefined,
+            timestamp: new Date(m.created_at),
+          }));
+          setMessages((prev) => ({
+            ...prev,
+            [activeSessionId]: loadedMessages,
+          }));
+        }
+
+        // Load preview file
+        if (data.previewFile) {
+          setPreviewFiles((prev) => ({
+            ...prev,
+            [activeSessionId]: data.previewFile,
+          }));
+        }
+      })
+      .catch(console.error);
+  }, [activeSessionId, messages]);
+
   const handleReloadPreview = useCallback(() => {
     setPreviewKey((prev) => prev + 1);
   }, []);
