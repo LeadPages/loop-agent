@@ -41,7 +41,29 @@ export async function GET(
       );
     }
 
-    const html = fs.readFileSync(htmlPath, "utf-8");
+    let html = fs.readFileSync(htmlPath, "utf-8");
+
+    // Inject script to prevent anchor link scrolling in preview iframe
+    const previewScript = `
+<script>
+document.addEventListener('click', function(e) {
+  const link = e.target.closest('a');
+  if (link) {
+    const href = link.getAttribute('href');
+    // Prevent scrolling for hash-only links or same-page anchors
+    if (href === '#' || (href && href.startsWith('#') && !href.startsWith('#/'))) {
+      e.preventDefault();
+    }
+  }
+});
+</script>
+`;
+    // Insert before closing body tag, or append if no body tag
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', previewScript + '</body>');
+    } else {
+      html += previewScript;
+    }
 
     return new NextResponse(html, {
       headers: {
