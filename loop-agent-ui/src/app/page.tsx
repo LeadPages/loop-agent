@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Sidebar, Session } from "@/components/dashboard/sidebar";
 import { Chat, Message } from "@/components/dashboard/chat";
 import { type Agent } from "@/components/dashboard/agent-selector";
@@ -27,6 +27,43 @@ export default function Dashboard() {
   const [loadingSessions, setLoadingSessions] = useState<Set<string>>(new Set()); // Per-session loading state
   const [previewFiles, setPreviewFiles] = useState<Record<string, string>>({}); // sessionId -> filename
   const [previewKey, setPreviewKey] = useState(0); // Key to force iframe reload
+  const [previewViewport, setPreviewViewport] = useState<"mobile" | "tablet" | "desktop" | "large">("desktop");
+  const [previewFullScreen, setPreviewFullScreen] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+
+  // Viewport sizes for preview
+  const viewportSizes = {
+    mobile: { width: 375, label: "Mobile" },
+    tablet: { width: 768, label: "Tablet" },
+    desktop: { width: 1280, label: "Desktop" },
+    large: { width: 1920, label: "Large" },
+  };
+
+  // Calculate scale to fit viewport in container
+  useEffect(() => {
+    const calculateScale = () => {
+      if (!previewContainerRef.current) return;
+
+      const containerWidth = previewContainerRef.current.clientWidth - 32; // subtract padding
+      const viewportWidth = viewportSizes[previewViewport].width;
+
+      if (viewportWidth <= containerWidth) {
+        setPreviewScale(1);
+      } else {
+        setPreviewScale(containerWidth / viewportWidth);
+      }
+    };
+
+    // Small delay to ensure container is rendered
+    const timeoutId = setTimeout(calculateScale, 50);
+    calculateScale();
+    window.addEventListener("resize", calculateScale);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", calculateScale);
+    };
+  }, [previewViewport, previewFullScreen, activeSessionId, previewFiles]);
 
   // Check for existing auth on mount
   useEffect(() => {
@@ -411,11 +448,64 @@ export default function Dashboard() {
             </div>
             {/* Preview panel - only shown when there's a generated file */}
             {activePreviewFile && (
-              <div className="w-1/2 h-full flex flex-col">
+              <div className={previewFullScreen
+                ? "fixed inset-0 z-50 flex flex-col bg-background"
+                : "w-1/2 h-full flex flex-col"
+              }>
                 <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border">
-                  <h2 className="text-lg font-semibold">Preview</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold">Preview</h2>
+                    {/* Viewport toggle buttons */}
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                      <button
+                        onClick={() => setPreviewViewport("mobile")}
+                        className={`p-1.5 rounded-md transition-colors ${previewViewport === "mobile" ? "bg-background shadow-sm" : "hover:bg-background/50"}`}
+                        title="Mobile (375px)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setPreviewViewport("tablet")}
+                        className={`p-1.5 rounded-md transition-colors ${previewViewport === "tablet" ? "bg-background shadow-sm" : "hover:bg-background/50"}`}
+                        title="Tablet (768px)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setPreviewViewport("desktop")}
+                        className={`p-1.5 rounded-md transition-colors ${previewViewport === "desktop" ? "bg-background shadow-sm" : "hover:bg-background/50"}`}
+                        title="Desktop (1280px)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setPreviewViewport("large")}
+                        className={`p-1.5 rounded-md transition-colors ${previewViewport === "large" ? "bg-background shadow-sm" : "hover:bg-background/50"}`}
+                        title="Large (1920px)"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M15 5h4M19 5v4" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {viewportSizes[previewViewport].width}px
+                      {previewScale < 1 && ` @ ${Math.round(previewScale * 100)}%`}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{activePreviewFile}</span>
                     <button
                       onClick={handleReloadPreview}
                       className="p-1.5 rounded-md hover:bg-muted transition-colors"
@@ -426,15 +516,71 @@ export default function Dashboard() {
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     </button>
+                    <button
+                      onClick={() => setPreviewFullScreen(!previewFullScreen)}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                      title={previewFullScreen ? "Exit full screen" : "Full screen"}
+                    >
+                      {previewFullScreen ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => window.open(`/p/${activeSessionId}`, "_blank")}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                      title="Open in new window"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                    <a
+                      href={`/api/sessions/${activeSessionId}/preview?file=${encodeURIComponent(activePreviewFile)}`}
+                      download={activePreviewFile}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                      title="Download HTML"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </a>
                   </div>
                 </div>
-                <div className="flex-1 bg-white">
-                  <iframe
-                    key={previewKey}
-                    src={`/api/sessions/${activeSessionId}/preview?file=${encodeURIComponent(activePreviewFile)}`}
-                    className="w-full h-full border-0"
-                    title="Landing Page Preview"
-                  />
+                <div
+                  ref={previewContainerRef}
+                  className="flex-1 bg-neutral-800 flex items-start justify-center p-4 overflow-hidden"
+                >
+                  <div
+                    className="bg-white shadow-2xl"
+                    style={{
+                      width: `${viewportSizes[previewViewport].width * previewScale}px`,
+                      height: '100%',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <iframe
+                      key={previewKey}
+                      src={`/api/sessions/${activeSessionId}/preview?file=${encodeURIComponent(activePreviewFile)}`}
+                      style={{
+                        width: `${viewportSizes[previewViewport].width}px`,
+                        height: `${100 / previewScale}%`,
+                        border: 'none',
+                        transform: `scale(${previewScale})`,
+                        transformOrigin: 'top left',
+                      }}
+                      title="Landing Page Preview"
+                    />
+                  </div>
                 </div>
               </div>
             )}
