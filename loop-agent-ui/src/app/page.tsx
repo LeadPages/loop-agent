@@ -65,8 +65,40 @@ export default function Dashboard() {
       .catch(console.error);
   }, []);
 
+  // Fetch existing sessions on mount
+  useEffect(() => {
+    fetch("/api/sessions")
+      .then((res) => res.json())
+      .then((data) => {
+        const loadedSessions = data.map((s: Session & { createdAt: string }) => ({
+          ...s,
+          createdAt: new Date(s.createdAt),
+        }));
+        setSessions(loadedSessions);
+      })
+      .catch(console.error);
+  }, []);
+
   const handleReloadPreview = useCallback(() => {
     setPreviewKey((prev) => prev + 1);
+  }, []);
+
+  const handleRenameSession = useCallback(async (id: string, newName: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (!response.ok) throw new Error("Failed to rename session");
+
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, name: newName } : s))
+      );
+    } catch (error) {
+      console.error("Failed to rename session:", error);
+    }
   }, []);
 
   const handleCreateSession = useCallback(async () => {
@@ -284,6 +316,7 @@ export default function Dashboard() {
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
         onCreateSession={handleCreateSession}
+        onRenameSession={handleRenameSession}
         agents={agents}
         selectedAgentId={selectedAgentId}
         onSelectAgent={setSelectedAgentId}

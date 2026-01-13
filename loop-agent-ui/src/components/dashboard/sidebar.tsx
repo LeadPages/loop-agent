@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ interface SidebarProps {
   activeSessionId: string | null;
   onSelectSession: (id: string) => void;
   onCreateSession: () => void;
+  onRenameSession: (id: string, newName: string) => void;
   agents: Agent[];
   selectedAgentId: string;
   onSelectAgent: (agentId: string) => void;
@@ -39,6 +41,7 @@ export function Sidebar({
   activeSessionId,
   onSelectSession,
   onCreateSession,
+  onRenameSession,
   agents,
   selectedAgentId,
   onSelectAgent,
@@ -107,6 +110,7 @@ export function Sidebar({
                 agents={agents}
                 isActive={session.id === activeSessionId}
                 onClick={() => onSelectSession(session.id)}
+                onRename={(newName) => onRenameSession(session.id, newName)}
               />
             ))
           )}
@@ -127,12 +131,44 @@ function SessionItem({
   agents,
   isActive,
   onClick,
+  onRename,
 }: {
   session: Session;
   agents: Agent[];
   isActive: boolean;
   onClick: () => void;
+  onRename: (newName: string) => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(session.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== session.name) {
+      onRename(trimmed);
+    } else {
+      setEditValue(session.name);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setEditValue(session.name);
+      setIsEditing(false);
+    }
+  };
+
   const statusColor: Record<string, string> = {
     active: "bg-green-500",
     idle: "bg-yellow-500",
@@ -154,12 +190,32 @@ function SessionItem({
       )}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-sm truncate flex items-center gap-1">
-          <span>{agentIcon}</span>
-          {session.name}
-        </span>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium text-sm bg-background border border-input rounded px-1 py-0.5 w-full mr-2 focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        ) : (
+          <span
+            className="font-medium text-sm truncate flex items-center gap-1 cursor-text"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            title="Double-click to rename"
+          >
+            <span>{agentIcon}</span>
+            {session.name}
+          </span>
+        )}
         <span
-          className={cn("w-2 h-2 rounded-full", statusColor[session.status] || "bg-gray-500")}
+          className={cn("w-2 h-2 rounded-full flex-shrink-0", statusColor[session.status] || "bg-gray-500")}
         />
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">

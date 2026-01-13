@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, deleteSession, getMessages } from "@/lib/agent";
+import { getSession, deleteSession, getMessages, updateSession } from "@/lib/agent";
 import { getAgentConfig } from "@/lib/agents";
 
 // GET /api/sessions/:id - Get session details with messages and agent info
@@ -23,6 +23,34 @@ export async function GET(
     messages,
     agent,
   });
+}
+
+// PATCH /api/sessions/:id - Update session (e.g., rename)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  try {
+    const body = await request.json();
+    const { name } = body;
+
+    if (!name || typeof name !== "string") {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    const session = updateSession(id, { name: name.trim() });
+
+    if (!session) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(session);
+  } catch (error) {
+    console.error("Failed to update session:", error);
+    return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
+  }
 }
 
 // DELETE /api/sessions/:id - End session and cleanup workspace
