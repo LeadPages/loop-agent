@@ -207,7 +207,7 @@ export function Chat({
               />
             </svg>
             <p className="text-lg font-semibold text-primary">Drop images here</p>
-            <p className="text-sm text-muted-foreground">JPEG, PNG, WebP, or GIF (max 10MB each)</p>
+            <p className="text-sm text-muted-foreground">JPEG, PNG, WebP, or GIF (max 5MB each)</p>
           </div>
         </div>
       )}

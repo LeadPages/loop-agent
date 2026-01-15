@@ -23,7 +23,7 @@ interface ImageUploadButtonProps {
 }
 
 export const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (Claude API limit)
 export const MAX_FILES = 5;
 
 // Shared validation function
@@ -38,7 +38,7 @@ export function validateFiles(files: File[]): { valid: File[]; error: string | n
       return { valid: [], error: `Invalid file type: ${file.name}. Accepted: JPEG, PNG, WebP, GIF` };
     }
     if (file.size > MAX_FILE_SIZE) {
-      return { valid: [], error: `File too large: ${file.name}. Maximum size is 10MB` };
+      return { valid: [], error: `File too large: ${file.name}. Maximum size is 5MB` };
     }
     validFiles.push(file);
   }
