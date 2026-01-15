@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-
-// Get the workspaces path from environment or use default
-function getWorkspacesPath(): string {
-  return process.env.WORKSPACES_PATH || path.join(process.cwd(), "data/workspaces");
-}
+import { getWorkspacePath } from "@/lib/workspace";
 
 // Map file extensions to MIME types
 const MIME_TYPES: Record<string, string> = {
@@ -59,8 +55,7 @@ export async function GET(
     }
 
     // Construct the file path
-    const workspacesPath = getWorkspacesPath();
-    const uploadsDir = path.join(workspacesPath, sessionId, "uploads");
+    const uploadsDir = path.join(getWorkspacePath(sessionId), "uploads");
     const filePath = path.join(uploadsDir, filename);
 
     // Resolve to absolute path and verify it's within the uploads directory

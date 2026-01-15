@@ -1,14 +1,18 @@
 import fs from "fs";
 import path from "path";
 
-// Workspace root directory - use environment variable or default
-const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || "/tmp/loop-agent-workspaces";
+// Workspace root directory - use WORKSPACES_PATH (preferred) or WORKSPACE_ROOT (legacy)
+// Local default: data/workspaces (relative to cwd)
+// Docker/Railway: /loop-data/workspaces (set via env)
+const WORKSPACES_PATH = process.env.WORKSPACES_PATH
+  || process.env.WORKSPACE_ROOT
+  || path.join(process.cwd(), "data/workspaces");
 
 /**
  * Get the workspace path for a session
  */
 export function getWorkspacePath(sessionId: string): string {
-  return path.join(WORKSPACE_ROOT, sessionId);
+  return path.join(WORKSPACES_PATH, sessionId);
 }
 
 /**
@@ -114,4 +118,4 @@ export function listWorkspaceFiles(sessionId: string): string[] {
   return files;
 }
 
-export { WORKSPACE_ROOT };
+export { WORKSPACES_PATH };

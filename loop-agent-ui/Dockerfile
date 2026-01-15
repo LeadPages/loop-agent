@@ -61,6 +61,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_PATH=/loop-data/sessions.db
+ENV WORKSPACES_PATH=/loop-data/workspaces
 ENV WORKSPACE_ROOT=/loop-data/workspaces
 
 # Run as root initially so entrypoint can fix volume permissions, then switch to nextjs

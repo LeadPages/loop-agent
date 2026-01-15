@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAttachment, getSession, updateAttachmentAnalysis } from "@/lib/db";
 import { analyzeImage } from "@/lib/landing-page/sdk-client";
+import { getWorkspacePath } from "@/lib/workspace";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
@@ -132,9 +133,7 @@ function getExtensionForMimeType(mimeType: string): string {
  * Get workspace uploads directory path
  */
 function getUploadsPath(sessionId: string): string {
-  const workspacesPath =
-    process.env.WORKSPACES_PATH || path.join(process.cwd(), "data/workspaces");
-  return path.join(workspacesPath, sessionId, "uploads");
+  return path.join(getWorkspacePath(sessionId), "uploads");
 }
 
 // POST /api/sessions/:id/upload - Upload files for a session
