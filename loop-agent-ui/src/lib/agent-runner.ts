@@ -166,8 +166,8 @@ function convertAttachmentsToImages(
   for (const attachment of attachments) {
     // Only include image attachments
     if (attachment.mime_type.startsWith("image/")) {
-      // Convert stored_path (relative) to full filesystem path
-      const fullPath = path.join(workspacePath, attachment.stored_path);
+      // Convert stored_path (filename) to full filesystem path in uploads directory
+      const fullPath = path.join(workspacePath, "uploads", attachment.stored_path);
 
       // Verify file exists before adding
       if (fs.existsSync(fullPath)) {
