@@ -26,7 +26,8 @@
       "Bash(npm run lint:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(railway up:*)"
+      "Bash(railway up:*)",
+      "Bash(git push)"
     ]
   },
   "enableAllProjectMcpServers": true,

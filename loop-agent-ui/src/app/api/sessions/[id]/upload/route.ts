@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAttachment, getSession, updateAttachmentAnalysis } from "@/lib/db";
-import { analyzeImage } from "@/lib/landing-page/sdk-client";
+import { analyzeImage, isApiKeyConfigured } from "@/lib/landing-page/image-analyzer";
+import { analyzeImage as analyzeImageSdk } from "@/lib/landing-page/sdk-client";
 import { getWorkspacePath } from "@/lib/workspace";
 import path from "path";
 import fs from "fs";
@@ -268,10 +269,19 @@ export async function POST(
       const url = `/api/sessions/${sessionId}/uploads/${finalFilename}`;
 
       // Analyze the image with Claude to extract context
+      // Uses direct Claude API (Haiku 4.5) for speed, falls back to Agent SDK if API key not set
       let analysis: string | null = null;
       try {
         console.log(`[upload] Analyzing image: ${finalFilename}`);
-        analysis = await analyzeImage(storedPath, detectedMimeType);
+        if (isApiKeyConfigured()) {
+          // Fast path: Direct Claude API with Haiku 4.5
+          console.log(`[upload] Using direct Claude API (Haiku 4.5)`);
+          analysis = await analyzeImage(storedPath, detectedMimeType);
+        } else {
+          // Fallback: Agent SDK (slower, uses Sonnet)
+          console.log(`[upload] Using Agent SDK (no ANTHROPIC_API_KEY set)`);
+          analysis = await analyzeImageSdk(storedPath, detectedMimeType);
+        }
         // Store analysis in database
         updateAttachmentAnalysis(attachmentId, analysis);
         console.log(`[upload] Image analysis complete for: ${finalFilename}`);
