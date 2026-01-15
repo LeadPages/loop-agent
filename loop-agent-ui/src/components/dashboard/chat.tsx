@@ -219,7 +219,7 @@ export function Chat({
             </div>
           ) : (
             messages.map((message) => (
-              <MessageBubble key={message.id} message={message} sessionId={sessionId} />
+              <MessageBubble key={message.id} message={message} />
             ))
           )}
           <div ref={messagesEndRef} />
@@ -252,7 +252,6 @@ export function Chat({
             <ImagePreview
               attachments={pendingAttachments}
               onRemove={handleRemoveAttachment}
-              sessionId={sessionId}
             />
           )}
           <div className="flex gap-2 items-end">
@@ -281,7 +280,7 @@ export function Chat({
   );
 }
 
-function MessageBubble({ message, sessionId }: { message: Message; sessionId: string }) {
+function MessageBubble({ message }: { message: Message }) {
   const isUser = message.type === "user";
   const isTool = message.type === "tool";
   const isSystem = message.type === "system";
@@ -318,7 +317,6 @@ function MessageBubble({ message, sessionId }: { message: Message; sessionId: st
         {message.attachments && message.attachments.length > 0 && (
           <MessageAttachments
             attachments={message.attachments}
-            sessionId={sessionId}
           />
         )}
         <p className="text-xs opacity-50 mt-2">

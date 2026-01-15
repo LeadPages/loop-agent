@@ -249,18 +249,18 @@ export async function POST(
       const storedPath = path.join(uploadsDir, finalFilename);
       fs.writeFileSync(storedPath, Buffer.from(buffer));
 
-      // Create database record
+      // Create database record - store the final filename as stored_path (relative)
       const attachment = createAttachment(
         attachmentId,
         sessionId,
         sanitizedFilename, // Store original sanitized filename
-        storedPath,
+        finalFilename, // Store just the filename, not full path
         detectedMimeType,
         file.size
       );
 
-      // Generate URL for accessing the file
-      const url = `/api/sessions/${sessionId}/attachments/${attachmentId}`;
+      // Generate URL for accessing the file using the stored filename
+      const url = `/api/sessions/${sessionId}/uploads/${finalFilename}`;
 
       attachments.push({
         id: attachment.id,

@@ -18,7 +18,12 @@
       "mcp__railway-mcp-server__set-variables",
       "mcp__railway-mcp-server__get-logs",
       "mcp__railway-mcp-server__list-deployments",
-      "Bash(railway logs:*)"
+      "Bash(railway logs:*)",
+      "Skill(railway:deploy)",
+      "Bash(railway status:*)",
+      "Bash(npx eslint:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -7,7 +7,6 @@ import type { Attachment } from "./image-upload";
 interface ImagePreviewProps {
   attachments: Attachment[];
   onRemove?: (id: string) => void;
-  sessionId: string;
 }
 
 function formatFileSize(bytes?: number): string {
@@ -20,15 +19,14 @@ function formatFileSize(bytes?: number): string {
 export function ImagePreview({
   attachments,
   onRemove,
-  sessionId,
 }: ImagePreviewProps) {
   const [modalImage, setModalImage] = useState<Attachment | null>(null);
 
   if (attachments.length === 0) return null;
 
   const getImageUrl = (attachment: Attachment) => {
-    // Use the session-specific URL for uploaded images
-    return `/api/sessions/${sessionId}/uploads/${attachment.id}`;
+    // Use the URL from the attachment (set by the server)
+    return attachment.url;
   };
 
   return (
@@ -141,17 +139,15 @@ export function ImagePreview({
 // Component for displaying attachments in message bubbles (read-only)
 export function MessageAttachments({
   attachments,
-  sessionId,
 }: {
   attachments: Attachment[];
-  sessionId: string;
 }) {
   const [modalImage, setModalImage] = useState<Attachment | null>(null);
 
   if (attachments.length === 0) return null;
 
   const getImageUrl = (attachment: Attachment) => {
-    return `/api/sessions/${sessionId}/uploads/${attachment.id}`;
+    return attachment.url;
   };
 
   return (

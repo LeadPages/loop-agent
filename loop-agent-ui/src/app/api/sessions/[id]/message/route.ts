@@ -19,16 +19,22 @@ export async function POST(
   const body = await request.json();
   const { message, model, attachmentIds } = body;
 
-  if (!message) {
-    return new Response(JSON.stringify({ error: "Message is required" }), {
+  // Allow image-only messages - use a default prompt if only images provided
+  const hasAttachments = attachmentIds && Array.isArray(attachmentIds) && attachmentIds.length > 0;
+
+  if (!message && !hasAttachments) {
+    return new Response(JSON.stringify({ error: "Message or attachments required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
+  // Use default prompt for image-only messages
+  const effectiveMessage = message || "Create a landing page based on the attached images.";
+
   // Store the user message
   const messageId = crypto.randomUUID();
-  addMessage(messageId, id, "user", message);
+  addMessage(messageId, id, "user", effectiveMessage);
 
   // Link any attachments to the message
   if (attachmentIds && Array.isArray(attachmentIds)) {
@@ -64,7 +70,7 @@ export async function POST(
 
       try {
         // Run the real Claude Agent SDK with the session's agent configuration
-        for await (const event of runAgent(id, message, session!.agentId, session?.sessionId ?? undefined, model)) {
+        for await (const event of runAgent(id, effectiveMessage, session!.agentId, session?.sessionId ?? undefined, model)) {
           // Send SSE event to client
           controller.enqueue(encoder.encode(formatSSE(event)));
 
