@@ -91,8 +91,12 @@ function sanitizeFilename(filename: string): string {
   // Remove leading dots (prevents hidden files and path traversal)
   sanitized = sanitized.replace(/^\.+/, "");
 
-  // Replace potentially dangerous characters
-  sanitized = sanitized.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
+  // Replace potentially dangerous characters and spaces
+  // Keep only alphanumeric, dash, underscore, and dot
+  sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  // Collapse multiple underscores
+  sanitized = sanitized.replace(/_+/g, "_");
 
   // Limit length (preserve extension)
   const ext = path.extname(sanitized);

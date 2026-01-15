@@ -37,8 +37,9 @@ function isValidFilename(filename: string): boolean {
   }
 
   // Validate it's a simple filename with allowed characters
-  // Allow alphanumeric, dash, underscore, dot
-  const validPattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/;
+  // Allow alphanumeric, dash, underscore, and dots (for filenames like "file.name.ext")
+  // Must have at least one dot and end with alphanumeric extension
+  const validPattern = /^[a-zA-Z0-9_.-]+\.[a-zA-Z0-9]+$/;
   return validPattern.test(filename);
 }
 

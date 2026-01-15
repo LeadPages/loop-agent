@@ -69,9 +69,24 @@ export function Chat({
     setPendingAttachments((prev) => [...prev, ...attachments]);
   };
 
+  // Called immediately when files are selected - shows images with analyzing state
+  const handleAnalysisStart = (tempAttachments: Attachment[]) => {
+    setPendingAttachments((prev) => [...prev, ...tempAttachments]);
+  };
+
+  // Called when analysis completes - updates the temp attachment with final data
+  const handleAnalysisComplete = (tempId: string, finalAttachment: Attachment) => {
+    setPendingAttachments((prev) =>
+      prev.map((a) => (a.id === tempId ? finalAttachment : a))
+    );
+  };
+
   const handleRemoveAttachment = (id: string) => {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
   };
+
+  // Check if any images are still being analyzed
+  const isAnalyzingImages = pendingAttachments.some((a) => a.isAnalyzing);
 
   // Handle files from drag-drop or paste
   const handleFilesUpload = useCallback(async (files: File[]) => {
@@ -153,7 +168,10 @@ export function Chat({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        if ((input.trim() || pendingAttachments.length > 0) && !isLoading) {
+        const canSend = (input.trim() || pendingAttachments.length > 0) &&
+                        !isLoading &&
+                        !pendingAttachments.some((a) => a.isAnalyzing);
+        if (canSend) {
           onSendMessage(input.trim(), pendingAttachments.length > 0 ? pendingAttachments : undefined);
           setInput("");
           setPendingAttachments([]);
@@ -257,6 +275,8 @@ export function Chat({
           <div className="flex gap-2 items-end">
             <ImageUploadButton
               onUpload={handleUpload}
+              onAnalysisStart={handleAnalysisStart}
+              onAnalysisComplete={handleAnalysisComplete}
               disabled={isLoading || isUploading}
               sessionId={sessionId}
             />
@@ -270,8 +290,12 @@ export function Chat({
               rows={3}
               className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <Button type="submit" disabled={isLoading || isUploading || (!input.trim() && pendingAttachments.length === 0)}>
-              Send
+            <Button
+              type="submit"
+              disabled={isLoading || isUploading || isAnalyzingImages || (!input.trim() && pendingAttachments.length === 0)}
+              title={isAnalyzingImages ? "Waiting for image analysis to complete..." : undefined}
+            >
+              {isAnalyzingImages ? "Analyzing..." : "Send"}
             </Button>
           </div>
         </div>

@@ -44,17 +44,43 @@ export function ImagePreview({
             >
               <button
                 type="button"
-                onClick={() => setModalImage(attachment)}
-                className="block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+                onClick={() => !attachment.isAnalyzing && setModalImage(attachment)}
+                className={cn(
+                  "block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md relative",
+                  attachment.isAnalyzing && "cursor-wait"
+                )}
+                disabled={attachment.isAnalyzing}
               >
                 <img
                   src={getImageUrl(attachment)}
                   alt={attachment.filename}
-                  className="h-16 w-16 rounded-md object-cover"
+                  className={cn(
+                    "h-16 w-16 rounded-md object-cover transition-all",
+                    attachment.isAnalyzing && "opacity-50 grayscale"
+                  )}
                 />
+                {/* Gray overlay while analyzing */}
+                {attachment.isAnalyzing && (
+                  <div className="absolute inset-0 bg-gray-900/30 rounded-md" />
+                )}
               </button>
-              {/* Analysis indicator */}
-              {attachment.analysis && (
+              {/* Analyzing indicator - glowing clock */}
+              {attachment.isAnalyzing && (
+                <div
+                  className={cn(
+                    "absolute -left-1 -bottom-1 rounded-full p-1",
+                    "bg-amber-500 text-white",
+                    "animate-pulse shadow-lg shadow-amber-500/50"
+                  )}
+                  title="Analyzing image..."
+                >
+                  <svg className="h-3 w-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              )}
+              {/* Analysis complete indicator - info icon */}
+              {!attachment.isAnalyzing && attachment.analysis && (
                 <button
                   type="button"
                   onClick={() => setExpandedAnalysis(
@@ -64,6 +90,7 @@ export function ImagePreview({
                     "absolute -left-1 -bottom-1 rounded-full p-1",
                     "bg-primary text-primary-foreground",
                     "focus:outline-none focus:ring-2 focus:ring-ring",
+                    "transition-all",
                     expandedAnalysis === attachment.id && "bg-primary/80"
                   )}
                   title="View image analysis"
@@ -104,11 +131,15 @@ export function ImagePreview({
                 <div className="truncate" title={attachment.filename}>
                   {attachment.filename}
                 </div>
-                {attachment.sizeBytes && (
+                {attachment.isAnalyzing ? (
+                  <div className="text-xs text-amber-500 animate-pulse">
+                    Analyzing...
+                  </div>
+                ) : attachment.sizeBytes ? (
                   <div className="text-xs opacity-70">
                     {formatFileSize(attachment.sizeBytes)}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
@@ -116,8 +147,8 @@ export function ImagePreview({
 
         {/* Expanded analysis panel */}
         {expandedAnalysis && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm max-h-64">
+            <div className="flex items-center justify-between mb-2 sticky top-0 bg-primary/5">
               <span className="font-medium text-primary">Image Analysis</span>
               <button
                 type="button"
@@ -129,19 +160,32 @@ export function ImagePreview({
                 </svg>
               </button>
             </div>
-            <div className="whitespace-pre-wrap text-muted-foreground">
+            <div className="whitespace-pre-wrap text-muted-foreground overflow-y-auto max-h-48">
               {attachments.find((a) => a.id === expandedAnalysis)?.analysis}
             </div>
           </div>
         )}
 
-        {/* Summary indicator when analysis exists */}
-        {hasAnyAnalysis && !expandedAnalysis && (
+        {/* Summary indicator */}
+        {!expandedAnalysis && (
           <div className="text-xs text-muted-foreground flex items-center gap-1">
-            <svg className="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Image{attachments.filter((a) => a.analysis).length > 1 ? 's' : ''} analyzed - click info icon to view details
+            {attachments.some((a) => a.isAnalyzing) ? (
+              <>
+                <svg className="h-3 w-3 text-amber-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-amber-500">
+                  Analyzing {attachments.filter((a) => a.isAnalyzing).length} image{attachments.filter((a) => a.isAnalyzing).length > 1 ? 's' : ''}...
+                </span>
+              </>
+            ) : hasAnyAnalysis ? (
+              <>
+                <svg className="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Image{attachments.filter((a) => a.analysis).length > 1 ? 's' : ''} analyzed - click info icon to view details
+              </>
+            ) : null}
           </div>
         )}
       </div>

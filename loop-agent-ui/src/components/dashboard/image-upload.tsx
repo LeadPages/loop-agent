@@ -11,10 +11,13 @@ export interface Attachment {
   mimeType: string;
   sizeBytes?: number;
   analysis?: string | null;
+  isAnalyzing?: boolean; // True while upload/analysis is in progress
 }
 
 interface ImageUploadButtonProps {
   onUpload: (attachments: Attachment[]) => void;
+  onAnalysisStart?: (tempAttachments: Attachment[]) => void; // Called immediately with temp attachments
+  onAnalysisComplete?: (tempId: string, finalAttachment: Attachment) => void; // Called when analysis finishes
   disabled?: boolean;
   sessionId: string;
 }
@@ -78,6 +81,8 @@ export async function uploadFiles(
 
 export function ImageUploadButton({
   onUpload,
+  onAnalysisStart,
+  onAnalysisComplete,
   disabled = false,
   sessionId,
 }: ImageUploadButtonProps) {
@@ -94,17 +99,53 @@ export function ImageUploadButton({
     if (!files || files.length === 0) return;
 
     setError(null);
+
+    // Validate files first
+    const { valid, error: validationError } = validateFiles(Array.from(files));
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    // Create temporary attachments with local preview URLs immediately
+    const tempAttachments: Attachment[] = valid.map((file, index) => ({
+      id: `temp-${Date.now()}-${index}`,
+      filename: file.name,
+      url: URL.createObjectURL(file), // Local blob URL for immediate preview
+      mimeType: file.type,
+      sizeBytes: file.size,
+      isAnalyzing: true,
+    }));
+
+    // Notify parent to show images immediately with analyzing state
+    if (onAnalysisStart) {
+      onAnalysisStart(tempAttachments);
+    }
+
     setIsUploading(true);
 
-    const { attachments, error: uploadError } = await uploadFiles(
-      sessionId,
-      Array.from(files)
-    );
+    // Upload and analyze
+    const { attachments, error: uploadError } = await uploadFiles(sessionId, valid);
 
     if (uploadError) {
       setError(uploadError);
+      // Remove temp attachments on error
+      if (onAnalysisStart) {
+        // Parent should handle cleanup
+      }
     } else {
-      onUpload(attachments);
+      // Update each temp attachment with the final server response
+      if (onAnalysisComplete) {
+        attachments.forEach((attachment, index) => {
+          const tempId = tempAttachments[index]?.id;
+          if (tempId) {
+            onAnalysisComplete(tempId, { ...attachment, isAnalyzing: false });
+          }
+        });
+      } else {
+        // Fallback to simple onUpload if new callbacks not provided
+        onUpload(attachments.map(a => ({ ...a, isAnalyzing: false })));
+      }
     }
 
     setIsUploading(false);

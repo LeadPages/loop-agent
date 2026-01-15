@@ -23,7 +23,10 @@
       "Bash(railway status:*)",
       "Bash(npx eslint:*)",
       "Bash(grep:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(railway up:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
