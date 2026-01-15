@@ -125,7 +125,7 @@ export async function sdkPrompt(
   options: PromptOptions,
   images?: ImageInput[]
 ): Promise<string> {
-  const { systemPrompt, model = "claude-sonnet-4-20250514" } = options;
+  const { systemPrompt, model = "claude-sonnet-4-5-20250929" } = options;
 
   let responseText = "";
 
@@ -210,7 +210,7 @@ Be specific and actionable. This description will directly inform design decisio
 
   const images: ImageInput[] = [{ path: imagePath, mimeType }];
 
-  return await sdkPrompt(userPrompt, { systemPrompt, model: "claude-sonnet-4-20250514" }, images);
+  return await sdkPrompt(userPrompt, { systemPrompt, model: "claude-sonnet-4-5-20250929" }, images);
 }
 
 /**

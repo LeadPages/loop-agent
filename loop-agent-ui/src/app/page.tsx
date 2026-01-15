@@ -6,11 +6,11 @@ import { Chat, Message, type Attachment } from "@/components/dashboard/chat";
 import { type Agent } from "@/components/dashboard/agent-selector";
 
 const DEFAULT_AGENT_ID = "landing-page-generator";
-const DEFAULT_MODEL_ID = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL_ID = "claude-sonnet-4-5-20250929";
 const ACCESS_CODE = process.env.NEXT_PUBLIC_ACCESS_CODE || "demo2024";
 
 export const AVAILABLE_MODELS = [
-  { id: "claude-sonnet-4-20250514", name: "Sonnet", description: "Balanced" },
+  { id: "claude-sonnet-4-5-20250929", name: "Sonnet", description: "Balanced" },
   { id: "claude-opus-4-5-20251101", name: "Opus", description: "Most capable" },
 ];
 

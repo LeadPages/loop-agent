@@ -53,7 +53,7 @@ export class LandingPageOrchestrator {
   constructor(options: OrchestratorOptions) {
     this.brandKit = options.brandKit;
     this.requirements = options.requirements;
-    this.model = options.model || "claude-sonnet-4-20250514";
+    this.model = options.model || "claude-sonnet-4-5-20250929";
     this.maxAttempts = options.maxAttempts || 3;
   }
 

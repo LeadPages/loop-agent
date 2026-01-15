@@ -209,7 +209,7 @@ async function* runLandingPageGenerator(
   attachments?: DbAttachment[]
 ): AsyncGenerator<SSEEvent> {
   const cwd = createWorkspace(sessionId);
-  const selectedModel = model || "claude-sonnet-4-20250514";
+  const selectedModel = model || "claude-sonnet-4-5-20250929";
 
   try {
     yield {
