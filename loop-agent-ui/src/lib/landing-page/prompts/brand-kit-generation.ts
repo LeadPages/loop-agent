@@ -158,10 +158,40 @@ Return ONLY the JSON object, no other text.
 `;
 
 /**
+ * Prompt addition for image analysis when images are provided.
+ */
+export const IMAGE_ANALYSIS_PROMPT = `
+## Attached Images
+
+The user has provided images related to their business. Analyze these images carefully to extract:
+
+- **Color palette**: Identify dominant colors, accent colors, and color harmony from logos, products, or brand materials
+- **Product/Service**: What products or services are shown in the images
+- **Visual Style**: Modern, vintage, minimalist, bold, playful, professional, elegant, etc.
+- **Industry signals**: What industry does this appear to be based on the visual content
+- **Brand personality**: What feeling or mood does the imagery convey
+- **Target audience**: Who appears to be the intended audience based on the visual presentation
+- **Logo/Branding elements**: If a logo is present, extract its colors and style
+
+IMPORTANT: Use the colors from the images as the PRIMARY source for the brand palette.
+If a logo is present, its colors should inform the primary and secondary colors.
+Product images can suggest accent colors and overall aesthetic direction.
+
+Use these visual insights to inform the brand kit generation, prioritizing extracted colors over defaults.
+`;
+
+/**
  * Get the system prompt for brand kit generation.
  */
 export function getBrandKitSystemPrompt(): string {
   return BRAND_KIT_GENERATOR_SYSTEM_PROMPT;
+}
+
+/**
+ * Get the image analysis prompt addition.
+ */
+export function getImageAnalysisPromptAddition(imageCount: number): string {
+  return IMAGE_ANALYSIS_PROMPT + `\n\n${imageCount} image(s) have been provided for analysis.`;
 }
 
 /**

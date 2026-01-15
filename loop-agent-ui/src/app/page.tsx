@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Sidebar, Session } from "@/components/dashboard/sidebar";
-import { Chat, Message } from "@/components/dashboard/chat";
+import { Chat, Message, type Attachment } from "@/components/dashboard/chat";
 import { type Agent } from "@/components/dashboard/agent-selector";
 
 const DEFAULT_AGENT_ID = "landing-page-generator";
@@ -134,12 +134,14 @@ export default function Dashboard() {
             content: string;
             tool_name?: string;
             created_at: string;
+            attachments?: Attachment[];
           }) => ({
             id: m.id,
             type: m.type as Message["type"],
             content: m.content,
             toolName: m.tool_name || undefined,
             timestamp: new Date(m.created_at),
+            attachments: m.attachments,
           }));
           setMessages((prev) => ({
             ...prev,
@@ -235,7 +237,7 @@ export default function Dashboard() {
   }, [sessions.length, selectedAgentId]);
 
   const handleSendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, attachments?: Attachment[]) => {
       if (!activeSessionId) return;
 
       const userMessage: Message = {
@@ -243,6 +245,7 @@ export default function Dashboard() {
         type: "user",
         content,
         timestamp: new Date(),
+        attachments,
       };
 
       setMessages((prev) => ({
@@ -253,11 +256,14 @@ export default function Dashboard() {
       // Mark this session as loading (doesn't affect other sessions)
       setLoadingSessions((prev) => new Set(prev).add(activeSessionId));
 
+      // Extract attachment IDs for the API request
+      const attachmentIds = attachments?.map((a) => a.id);
+
       try {
         const response = await fetch(`/api/sessions/${activeSessionId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: content, model: selectedModelId }),
+          body: JSON.stringify({ message: content, model: selectedModelId, attachmentIds }),
         });
 
         if (!response.ok) {
@@ -442,6 +448,7 @@ export default function Dashboard() {
                 messages={activeMessages}
                 isLoading={isActiveSessionLoading}
                 onSendMessage={handleSendMessage}
+                sessionId={activeSession.id}
                 sessionName={activeSession.name}
                 agent={activeAgent}
               />

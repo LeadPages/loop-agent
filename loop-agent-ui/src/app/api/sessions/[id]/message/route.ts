@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSession, updateSession, createSession, addMessage } from "@/lib/agent";
+import { linkAttachmentToMessage } from "@/lib/db";
 import { runAgent, formatSSE, type SSEEvent } from "@/lib/agent-runner";
 
 // POST /api/sessions/:id/message - Send message and stream response
@@ -16,7 +17,7 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { message, model } = body;
+  const { message, model, attachmentIds } = body;
 
   if (!message) {
     return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -26,7 +27,15 @@ export async function POST(
   }
 
   // Store the user message
-  addMessage(crypto.randomUUID(), id, "user", message);
+  const messageId = crypto.randomUUID();
+  addMessage(messageId, id, "user", message);
+
+  // Link any attachments to the message
+  if (attachmentIds && Array.isArray(attachmentIds)) {
+    for (const attachmentId of attachmentIds) {
+      linkAttachmentToMessage(attachmentId, messageId);
+    }
+  }
 
   // Update session status
   updateSession(id, { status: "active" });

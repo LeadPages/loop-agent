@@ -3,7 +3,9 @@
  * Uses the same authentication as the main agent (Claude Code local login).
  */
 
-import { query } from "@anthropic-ai/claude-agent-sdk";
+import { query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import fs from "fs";
+import { randomUUID } from "crypto";
 
 export interface PromptOptions {
   systemPrompt: string;
@@ -11,21 +13,136 @@ export interface PromptOptions {
   maxTokens?: number;
 }
 
+export interface ImageInput {
+  path: string;
+  mimeType: string;
+}
+
+/**
+ * Supported image MIME types for Claude API
+ */
+export type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+
+/**
+ * Content block types for multimodal prompts (Anthropic SDK compatible)
+ */
+export type TextContent = {
+  type: "text";
+  text: string;
+};
+
+export type ImageContent = {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: ImageMediaType;
+    data: string;
+  };
+};
+
+export type ContentBlock = TextContent | ImageContent;
+
+/**
+ * Check if a MIME type is a supported image type for Claude API
+ */
+function isSupportedImageType(mimeType: string): mimeType is ImageMediaType {
+  return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mimeType);
+}
+
+/**
+ * Build content blocks from text and optional images for multimodal prompts.
+ */
+export function buildContentBlocks(
+  textPrompt: string,
+  images?: ImageInput[]
+): ContentBlock[] {
+  const content: ContentBlock[] = [];
+
+  // Add images first (Claude recommends images before text for better analysis)
+  if (images && images.length > 0) {
+    for (const img of images) {
+      try {
+        // Skip unsupported image types
+        if (!isSupportedImageType(img.mimeType)) {
+          console.warn(`[sdk-client] Skipping unsupported image type: ${img.mimeType}`);
+          continue;
+        }
+
+        const imageData = fs.readFileSync(img.path);
+        const base64Data = imageData.toString("base64");
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.mimeType,
+            data: base64Data,
+          },
+        });
+      } catch (error) {
+        console.error(`[sdk-client] Failed to read image ${img.path}:`, error);
+        // Continue with other images if one fails
+      }
+    }
+  }
+
+  // Add text prompt
+  content.push({
+    type: "text",
+    text: textPrompt,
+  });
+
+  return content;
+}
+
+/**
+ * Create an async iterable that yields a single SDKUserMessage with multimodal content.
+ * This is required because the query() function expects AsyncIterable<SDKUserMessage>
+ * for non-string prompts.
+ */
+async function* createMultimodalPrompt(
+  content: ContentBlock[],
+  sessionId: string
+): AsyncIterable<SDKUserMessage> {
+  yield {
+    type: "user",
+    message: {
+      role: "user",
+      content: content,
+    },
+    parent_tool_use_id: null,
+    uuid: randomUUID(),
+    session_id: sessionId,
+  };
+}
+
 /**
  * Make a simple prompt/response call using the Claude Agent SDK.
  * This uses the same auth as the main agent (no ANTHROPIC_API_KEY needed).
+ * Supports optional images for multimodal prompts.
  */
 export async function sdkPrompt(
   userPrompt: string,
-  options: PromptOptions
+  options: PromptOptions,
+  images?: ImageInput[]
 ): Promise<string> {
   const { systemPrompt, model = "claude-sonnet-4-20250514" } = options;
 
   let responseText = "";
 
+  // Determine if we need multimodal prompt
+  const hasImages = images && images.length > 0;
+
+  // Build prompt - either simple string or async iterable of SDKUserMessage
+  const prompt = hasImages
+    ? createMultimodalPrompt(
+        buildContentBlocks(userPrompt, images),
+        randomUUID() // Temporary session ID for multimodal prompt
+      )
+    : userPrompt;
+
   // Use query() with tools disabled for simple prompt/response
   for await (const message of query({
-    prompt: userPrompt,
+    prompt,
     options: {
       model,
       systemPrompt,

@@ -47,6 +47,22 @@ function getDb(): DatabaseType {
     );
 
     CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id);
+
+    CREATE TABLE IF NOT EXISTS attachments (
+      id TEXT PRIMARY KEY,
+      message_id TEXT,
+      session_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      stored_path TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_attachments_session_id ON attachments(session_id);
+    CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments(message_id);
   `);
 
   // Migration: Add agent_id column if it doesn't exist (for existing databases)
@@ -82,6 +98,17 @@ export interface DbMessage {
   created_at: string;
 }
 
+export interface DbAttachment {
+  id: string;
+  message_id: string | null;
+  session_id: string;
+  filename: string;
+  stored_path: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+}
+
 // Lazy-initialized prepared statements
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _insertSessionStmt: Statement<any[]> | null = null;
@@ -99,6 +126,18 @@ let _insertMessageStmt: Statement<any[]> | null = null;
 let _getMessagesStmt: Statement<any[]> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _deleteMessagesBySessionStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _insertAttachmentStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _getAttachmentStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _getAttachmentsBySessionStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _getAttachmentsByMessageStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _linkAttachmentToMessageStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _deleteAttachmentStmt: Statement<any[]> | null = null;
 
 function getInsertSessionStmt() {
   if (!_insertSessionStmt) {
@@ -171,6 +210,51 @@ function getDeleteMessagesBySessionStmt() {
   return _deleteMessagesBySessionStmt;
 }
 
+function getInsertAttachmentStmt() {
+  if (!_insertAttachmentStmt) {
+    _insertAttachmentStmt = getDb().prepare(`
+      INSERT INTO attachments (id, session_id, filename, stored_path, mime_type, size_bytes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+  }
+  return _insertAttachmentStmt;
+}
+
+function getGetAttachmentStmt() {
+  if (!_getAttachmentStmt) {
+    _getAttachmentStmt = getDb().prepare(`SELECT * FROM attachments WHERE id = ?`);
+  }
+  return _getAttachmentStmt;
+}
+
+function getGetAttachmentsBySessionStmt() {
+  if (!_getAttachmentsBySessionStmt) {
+    _getAttachmentsBySessionStmt = getDb().prepare(`SELECT * FROM attachments WHERE session_id = ? ORDER BY created_at ASC`);
+  }
+  return _getAttachmentsBySessionStmt;
+}
+
+function getGetAttachmentsByMessageStmt() {
+  if (!_getAttachmentsByMessageStmt) {
+    _getAttachmentsByMessageStmt = getDb().prepare(`SELECT * FROM attachments WHERE message_id = ? ORDER BY created_at ASC`);
+  }
+  return _getAttachmentsByMessageStmt;
+}
+
+function getLinkAttachmentToMessageStmt() {
+  if (!_linkAttachmentToMessageStmt) {
+    _linkAttachmentToMessageStmt = getDb().prepare(`UPDATE attachments SET message_id = ? WHERE id = ?`);
+  }
+  return _linkAttachmentToMessageStmt;
+}
+
+function getDeleteAttachmentStmt() {
+  if (!_deleteAttachmentStmt) {
+    _deleteAttachmentStmt = getDb().prepare(`DELETE FROM attachments WHERE id = ?`);
+  }
+  return _deleteAttachmentStmt;
+}
+
 // Export database operations
 export function createSession(id: string, name: string, agentId: string, cwd: string): DbSession {
   getInsertSessionStmt().run(id, name, agentId, cwd);
@@ -235,6 +319,40 @@ export function getMessages(sessionId: string): DbMessage[] {
 
 export function deleteMessages(sessionId: string): void {
   getDeleteMessagesBySessionStmt().run(sessionId);
+}
+
+// Attachment operations
+export function createAttachment(
+  id: string,
+  sessionId: string,
+  filename: string,
+  storedPath: string,
+  mimeType: string,
+  sizeBytes: number
+): DbAttachment {
+  getInsertAttachmentStmt().run(id, sessionId, filename, storedPath, mimeType, sizeBytes);
+  return getGetAttachmentStmt().get(id) as DbAttachment;
+}
+
+export function getAttachment(id: string): DbAttachment | undefined {
+  return getGetAttachmentStmt().get(id) as DbAttachment | undefined;
+}
+
+export function getAttachmentsBySession(sessionId: string): DbAttachment[] {
+  return getGetAttachmentsBySessionStmt().all(sessionId) as DbAttachment[];
+}
+
+export function getAttachmentsByMessage(messageId: string): DbAttachment[] {
+  return getGetAttachmentsByMessageStmt().all(messageId) as DbAttachment[];
+}
+
+export function linkAttachmentToMessage(attachmentId: string, messageId: string): void {
+  getLinkAttachmentToMessageStmt().run(messageId, attachmentId);
+}
+
+export function deleteAttachment(id: string): boolean {
+  const result = getDeleteAttachmentStmt().run(id);
+  return result.changes > 0;
 }
 
 // Export db getter for direct access if needed

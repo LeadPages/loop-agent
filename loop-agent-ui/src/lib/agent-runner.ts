@@ -1,9 +1,11 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import fs from "fs";
 import path from "path";
-import { createWorkspace } from "./workspace";
+import { createWorkspace, getWorkspacePath } from "./workspace";
 import { getAgentConfig, DEFAULT_AGENT_ID } from "./agents";
 import { generateBrandKit, LandingPageOrchestrator } from "./landing-page";
+import { getAttachmentsBySession, type DbAttachment } from "./db";
+import type { ImageInput } from "./landing-page/sdk-client";
 
 // Types for SSE events we emit
 export interface SSEEvent {
@@ -34,7 +36,9 @@ export async function* runAgent(
 
   // Special handling for landing page generator
   if (agentId === "landing-page-generator") {
-    yield* runLandingPageGenerator(sessionId, prompt, model);
+    // Fetch attachments for the session to pass images to the brand kit generator
+    const attachments = getAttachmentsBySession(sessionId);
+    yield* runLandingPageGenerator(sessionId, prompt, model, attachments);
     return;
   }
 
@@ -149,12 +153,45 @@ export function formatSSE(event: SSEEvent): string {
 }
 
 /**
+ * Convert database attachments to ImageInput array for brand kit generation.
+ * Only includes image attachments (filters out other file types).
+ */
+function convertAttachmentsToImages(
+  sessionId: string,
+  attachments: DbAttachment[]
+): ImageInput[] {
+  const workspacePath = getWorkspacePath(sessionId);
+  const images: ImageInput[] = [];
+
+  for (const attachment of attachments) {
+    // Only include image attachments
+    if (attachment.mime_type.startsWith("image/")) {
+      // Convert stored_path (relative) to full filesystem path
+      const fullPath = path.join(workspacePath, attachment.stored_path);
+
+      // Verify file exists before adding
+      if (fs.existsSync(fullPath)) {
+        images.push({
+          path: fullPath,
+          mimeType: attachment.mime_type,
+        });
+      } else {
+        console.warn(`[agent-runner] Image file not found: ${fullPath}`);
+      }
+    }
+  }
+
+  return images;
+}
+
+/**
  * Run the landing page generator with multi-agent orchestration
  */
 async function* runLandingPageGenerator(
   sessionId: string,
   prompt: string,
-  model?: string
+  model?: string,
+  attachments?: DbAttachment[]
 ): AsyncGenerator<SSEEvent> {
   const cwd = createWorkspace(sessionId);
   const selectedModel = model || "claude-sonnet-4-20250514";
@@ -167,19 +204,28 @@ async function* runLandingPageGenerator(
       tools: ["LandingPageOrchestrator"],
     };
 
+    // Convert attachments to images for brand kit generation
+    const images = attachments && attachments.length > 0
+      ? convertAttachmentsToImages(sessionId, attachments)
+      : undefined;
+
     // Step 1: Generate brand kit
     yield {
       type: "assistant",
-      content: "Analyzing your input to extract brand information...",
+      content: images && images.length > 0
+        ? `Analyzing your input and ${images.length} image(s) to extract brand information...`
+        : "Analyzing your input to extract brand information...",
     };
 
     yield {
       type: "tool",
       toolName: "BrandKitGenerator",
-      content: "Extracting brand kit from unstructured text...",
+      content: images && images.length > 0
+        ? `Extracting brand kit from text and ${images.length} image(s)...`
+        : "Extracting brand kit from unstructured text...",
     };
 
-    const { brandKit, confidence, warnings } = await generateBrandKit(prompt);
+    const { brandKit, confidence, warnings } = await generateBrandKit(prompt, undefined, images);
 
     yield {
       type: "assistant",

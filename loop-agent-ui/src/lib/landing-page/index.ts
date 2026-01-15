@@ -54,9 +54,14 @@ export {
 export {
   BRAND_KIT_GENERATOR_SYSTEM_PROMPT,
   BRAND_KIT_EXTRACTION_PROMPT,
+  IMAGE_ANALYSIS_PROMPT,
   getBrandKitSystemPrompt,
   getBrandKitExtractionPrompt,
+  getImageAnalysisPromptAddition,
 } from "./prompts/brand-kit-generation";
+
+// SDK client exports
+export type { ImageInput, ContentBlock, TextContent, ImageContent } from "./sdk-client";
 
 // Agent exports (for advanced usage)
 export {

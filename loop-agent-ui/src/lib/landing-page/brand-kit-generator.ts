@@ -7,6 +7,7 @@ import type { BrandKit, BrandKitResult } from "./schemas";
 import {
   getBrandKitSystemPrompt,
   getBrandKitExtractionPrompt,
+  getImageAnalysisPromptAddition,
 } from "./prompts/brand-kit-generation";
 import {
   INDUSTRY_TEMPLATES,
@@ -14,14 +15,16 @@ import {
   getDefaultTypographyScale,
   getDefaultSpacingScale,
 } from "./prompts/industry-templates";
-import { sdkPrompt, extractJsonFromText } from "./sdk-client";
+import { sdkPrompt, extractJsonFromText, type ImageInput } from "./sdk-client";
 
 /**
  * Generate a brand kit from unstructured text input.
+ * Optionally analyzes images to extract colors, style, and brand information.
  */
 export async function generateBrandKit(
   unstructuredText: string,
-  industryHint?: string
+  industryHint?: string,
+  images?: ImageInput[]
 ): Promise<BrandKitResult> {
   // Get industry context if available
   const industryContext = industryHint
@@ -32,10 +35,16 @@ export async function generateBrandKit(
     getBrandKitSystemPrompt() +
     (industryContext ? `\n\nIndustry Context:\n${industryContext}` : "");
 
-  const userPrompt = getBrandKitExtractionPrompt(unstructuredText);
+  // Build user prompt with image analysis instructions if images provided
+  let userPrompt = getBrandKitExtractionPrompt(unstructuredText);
 
-  // Use SDK client (same auth as main agent)
-  const responseText = await sdkPrompt(userPrompt, { systemPrompt });
+  if (images && images.length > 0) {
+    userPrompt = getImageAnalysisPromptAddition(images.length) + "\n\n" + userPrompt;
+    console.log(`[brand-kit-generator] Including ${images.length} images for analysis`);
+  }
+
+  // Use SDK client with optional images (same auth as main agent)
+  const responseText = await sdkPrompt(userPrompt, { systemPrompt }, images);
   const rawBrandKit = extractJsonFromText(responseText);
 
   if (!rawBrandKit) {
@@ -44,7 +53,7 @@ export async function generateBrandKit(
 
   // Parse, validate, and auto-fix
   const { brandKit, warnings } = parseAndValidateBrandKit(rawBrandKit);
-  const confidence = calculateConfidence(brandKit, warnings, unstructuredText);
+  const confidence = calculateConfidence(brandKit, warnings, unstructuredText, images);
 
   return { brandKit, confidence, warnings };
 }
@@ -286,7 +295,8 @@ function validatePersonalityTraits(traits: string[] | undefined): string[] {
 function calculateConfidence(
   brandKit: BrandKit,
   warnings: string[],
-  originalInput: string
+  originalInput: string,
+  images?: ImageInput[]
 ): number {
   let confidence = 1.0;
 
@@ -306,6 +316,11 @@ function calculateConfidence(
     confidence -= 0.2;
   } else if (originalInput.length < 100) {
     confidence -= 0.1;
+  }
+
+  // Boost confidence when images are provided (visual context helps)
+  if (images && images.length > 0) {
+    confidence += 0.1;
   }
 
   // Ensure confidence is between 0 and 1
