@@ -173,11 +173,30 @@ The user has provided images related to their business. Analyze these images car
 - **Target audience**: Who appears to be the intended audience based on the visual presentation
 - **Logo/Branding elements**: If a logo is present, extract its colors and style
 
-IMPORTANT: Use the colors from the images as the PRIMARY source for the brand palette.
-If a logo is present, its colors should inform the primary and secondary colors.
-Product images can suggest accent colors and overall aesthetic direction.
+## CRITICAL INSTRUCTIONS
 
-Use these visual insights to inform the brand kit generation, prioritizing extracted colors over defaults.
+1. **Colors**: Use the colors from the images as the PRIMARY source for the brand palette.
+   If a logo is present, its colors should inform the primary and secondary colors.
+
+2. **Business Type**: Based on what you see in the images, determine what type of business this is.
+   - If you see pest control imagery (cats catching mice, traps, etc.) → this is a pest control business
+   - If you see food/restaurant imagery → this is a restaurant business
+   - If you see tech/software imagery → this is a SaaS business
+   - And so on for other industries
+
+3. **businessInfo.services**: You MUST populate the services array based on what you observe.
+   Examples:
+   - Pest control imagery → services: ["pest control", "rodent removal", "home protection"]
+   - Restaurant imagery → services: ["dining", "catering", "takeout"]
+   - Tech product imagery → services: ["software", "analytics", "automation"]
+
+4. **businessInfo.tagline**: Generate a tagline that accurately describes what the business does
+   based on the imagery. This tagline will be used to plan the landing page content.
+
+5. **imageryStyle.mood**: Describe what the images convey about the business offering.
+
+The landing page content will be generated based on businessInfo.services and businessInfo.tagline,
+so these fields are CRITICAL for accurate content generation. Do not leave them empty or generic.
 `;
 
 /**

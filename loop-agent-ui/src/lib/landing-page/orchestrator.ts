@@ -187,7 +187,43 @@ export class LandingPageOrchestrator {
       throw new Error("Design tokens not available");
     }
 
-    return await planContent(this.designTokens, this.requirements, this.model);
+    // Build enriched requirements that include business context from brand kit
+    const businessContext = this.buildBusinessContext();
+    const enrichedRequirements = businessContext
+      ? `## Business Context\n${businessContext}\n\n## User Requirements\n${this.requirements}`
+      : this.requirements;
+
+    return await planContent(this.designTokens, enrichedRequirements, this.model);
+  }
+
+  /**
+   * Build business context string from brand kit for content planner.
+   */
+  private buildBusinessContext(): string {
+    const parts: string[] = [];
+    const { businessInfo, name, imageryStyle } = this.brandKit;
+
+    // Business name
+    if (name) {
+      parts.push(`**Business Name:** ${name}`);
+    }
+
+    // Tagline (often describes what the business does)
+    if (businessInfo?.tagline) {
+      parts.push(`**Tagline:** ${businessInfo.tagline}`);
+    }
+
+    // Services (critical for understanding business type)
+    if (businessInfo?.services && businessInfo.services.length > 0) {
+      parts.push(`**Services/Products:** ${businessInfo.services.join(", ")}`);
+    }
+
+    // Imagery mood (provides context about brand direction)
+    if (imageryStyle?.mood) {
+      parts.push(`**Visual Mood:** ${imageryStyle.mood}`);
+    }
+
+    return parts.join("\n");
   }
 
   /**
