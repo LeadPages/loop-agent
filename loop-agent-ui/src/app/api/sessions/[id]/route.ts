@@ -1,7 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, deleteSession, getMessages, updateSession } from "@/lib/agent";
+import { getAttachmentsByMessage, DbMessage, DbAttachment } from "@/lib/db";
 import { getAgentConfig } from "@/lib/agents";
 import { listWorkspaceFiles } from "@/lib/workspace";
+
+// Transform a DbAttachment to the frontend Attachment format
+function toAttachment(sessionId: string, dbAttachment: DbAttachment) {
+  return {
+    id: dbAttachment.id,
+    filename: dbAttachment.filename,
+    url: `/api/sessions/${sessionId}/uploads/${dbAttachment.stored_path}`,
+    mimeType: dbAttachment.mime_type,
+    sizeBytes: dbAttachment.size_bytes,
+    analysis: dbAttachment.analysis,
+  };
+}
+
+// Get messages with their attachments for a session
+function getMessagesWithAttachments(sessionId: string) {
+  const messages = getMessages(sessionId) as DbMessage[];
+  return messages.map((message) => {
+    const attachments = getAttachmentsByMessage(message.id);
+    return {
+      ...message,
+      attachments: attachments.length > 0
+        ? attachments.map((a) => toAttachment(sessionId, a))
+        : undefined,
+    };
+  });
+}
 
 // GET /api/sessions/:id - Get session details with messages and agent info
 export async function GET(
@@ -15,8 +42,8 @@ export async function GET(
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  // Include messages and agent info in response
-  const messages = getMessages(id);
+  // Include messages (with attachments) and agent info in response
+  const messages = getMessagesWithAttachments(id);
   const agent = getAgentConfig(session.agentId);
 
   // Find preview file (HTML files in workspace)
