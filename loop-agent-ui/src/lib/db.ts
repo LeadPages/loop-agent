@@ -56,6 +56,7 @@ function getDb(): DatabaseType {
       stored_path TEXT NOT NULL,
       mime_type TEXT NOT NULL,
       size_bytes INTEGER NOT NULL,
+      analysis TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
       FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL
@@ -68,6 +69,13 @@ function getDb(): DatabaseType {
   // Migration: Add agent_id column if it doesn't exist (for existing databases)
   try {
     _db.exec(`ALTER TABLE sessions ADD COLUMN agent_id TEXT NOT NULL DEFAULT 'loop-agent-safe'`);
+  } catch {
+    // Column already exists, ignore
+  }
+
+  // Migration: Add analysis column to attachments if it doesn't exist
+  try {
+    _db.exec(`ALTER TABLE attachments ADD COLUMN analysis TEXT`);
   } catch {
     // Column already exists, ignore
   }
@@ -106,6 +114,7 @@ export interface DbAttachment {
   stored_path: string;
   mime_type: string;
   size_bytes: number;
+  analysis: string | null;
   created_at: string;
 }
 
@@ -138,6 +147,8 @@ let _getAttachmentsByMessageStmt: Statement<any[]> | null = null;
 let _linkAttachmentToMessageStmt: Statement<any[]> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _deleteAttachmentStmt: Statement<any[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _updateAttachmentAnalysisStmt: Statement<any[]> | null = null;
 
 function getInsertSessionStmt() {
   if (!_insertSessionStmt) {
@@ -255,6 +266,13 @@ function getDeleteAttachmentStmt() {
   return _deleteAttachmentStmt;
 }
 
+function getUpdateAttachmentAnalysisStmt() {
+  if (!_updateAttachmentAnalysisStmt) {
+    _updateAttachmentAnalysisStmt = getDb().prepare(`UPDATE attachments SET analysis = ? WHERE id = ?`);
+  }
+  return _updateAttachmentAnalysisStmt;
+}
+
 // Export database operations
 export function createSession(id: string, name: string, agentId: string, cwd: string): DbSession {
   getInsertSessionStmt().run(id, name, agentId, cwd);
@@ -353,6 +371,10 @@ export function linkAttachmentToMessage(attachmentId: string, messageId: string)
 export function deleteAttachment(id: string): boolean {
   const result = getDeleteAttachmentStmt().run(id);
   return result.changes > 0;
+}
+
+export function updateAttachmentAnalysis(id: string, analysis: string): void {
+  getUpdateAttachmentAnalysisStmt().run(analysis, id);
 }
 
 // Export db getter for direct access if needed

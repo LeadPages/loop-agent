@@ -10,6 +10,7 @@ export interface Attachment {
   url: string;
   mimeType: string;
   sizeBytes?: number;
+  analysis?: string | null;
 }
 
 interface ImageUploadButtonProps {

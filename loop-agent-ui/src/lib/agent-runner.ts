@@ -153,15 +153,25 @@ export function formatSSE(event: SSEEvent): string {
 }
 
 /**
- * Convert database attachments to ImageInput array for brand kit generation.
+ * Processed attachment info for brand kit generation
+ */
+interface ProcessedAttachment {
+  image: ImageInput;
+  analysis: string | null;
+  url: string;
+  filename: string;
+}
+
+/**
+ * Convert database attachments to processed attachment info for brand kit generation.
  * Only includes image attachments (filters out other file types).
  */
-function convertAttachmentsToImages(
+function processAttachments(
   sessionId: string,
   attachments: DbAttachment[]
-): ImageInput[] {
+): ProcessedAttachment[] {
   const workspacePath = getWorkspacePath(sessionId);
-  const images: ImageInput[] = [];
+  const processed: ProcessedAttachment[] = [];
 
   for (const attachment of attachments) {
     // Only include image attachments
@@ -171,9 +181,14 @@ function convertAttachmentsToImages(
 
       // Verify file exists before adding
       if (fs.existsSync(fullPath)) {
-        images.push({
-          path: fullPath,
-          mimeType: attachment.mime_type,
+        processed.push({
+          image: {
+            path: fullPath,
+            mimeType: attachment.mime_type,
+          },
+          analysis: attachment.analysis,
+          url: `/api/sessions/${sessionId}/uploads/${attachment.stored_path}`,
+          filename: attachment.filename,
         });
       } else {
         console.warn(`[agent-runner] Image file not found: ${fullPath}`);
@@ -181,7 +196,7 @@ function convertAttachmentsToImages(
     }
   }
 
-  return images;
+  return processed;
 }
 
 /**
@@ -204,28 +219,49 @@ async function* runLandingPageGenerator(
       tools: ["LandingPageOrchestrator"],
     };
 
-    // Convert attachments to images for brand kit generation
-    const images = attachments && attachments.length > 0
-      ? convertAttachmentsToImages(sessionId, attachments)
+    // Process attachments to get images, analysis, and URLs
+    const processedAttachments = attachments && attachments.length > 0
+      ? processAttachments(sessionId, attachments)
+      : [];
+
+    const images = processedAttachments.length > 0
+      ? processedAttachments.map((p) => p.image)
       : undefined;
+
+    // Build context from stored image analysis
+    const imageAnalysisContext = processedAttachments
+      .filter((p) => p.analysis)
+      .map((p) => `### ${p.filename}\n${p.analysis}`)
+      .join("\n\n");
+
+    // Build image URLs for embedding
+    const imageUrls = processedAttachments.map((p) => ({
+      filename: p.filename,
+      url: p.url,
+    }));
 
     // Step 1: Generate brand kit
     yield {
       type: "assistant",
-      content: images && images.length > 0
-        ? `Analyzing your input and ${images.length} image(s) to extract brand information...`
+      content: processedAttachments.length > 0
+        ? `Analyzing your input and ${processedAttachments.length} image(s) to extract brand information...`
         : "Analyzing your input to extract brand information...",
     };
 
     yield {
       type: "tool",
       toolName: "BrandKitGenerator",
-      content: images && images.length > 0
-        ? `Extracting brand kit from text and ${images.length} image(s)...`
+      content: processedAttachments.length > 0
+        ? `Extracting brand kit from text and ${processedAttachments.length} image(s)...\n\nImage analysis available:\n${imageAnalysisContext.substring(0, 500)}...`
         : "Extracting brand kit from unstructured text...",
     };
 
-    const { brandKit, confidence, warnings } = await generateBrandKit(prompt, undefined, images);
+    // Enhance prompt with image analysis context
+    const enhancedPrompt = imageAnalysisContext
+      ? `${prompt}\n\n## Uploaded Image Analysis\n${imageAnalysisContext}\n\n## Available Images for Embedding\n${imageUrls.map((i) => `- ${i.filename}: ${i.url}`).join("\n")}`
+      : prompt;
+
+    const { brandKit, confidence, warnings } = await generateBrandKit(enhancedPrompt, undefined, images);
 
     yield {
       type: "assistant",
@@ -243,9 +279,14 @@ ${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
       content: "Generating landing page with multi-agent orchestration...",
     };
 
+    // Include image URLs in requirements so they can be embedded
+    const orchestratorRequirements = imageUrls.length > 0
+      ? `${prompt}\n\n## Available Images to Embed\nThe following uploaded images should be used in the landing page where appropriate:\n${imageUrls.map((i) => `- ${i.filename}: ${i.url}`).join("\n")}\n\nUse these actual image URLs in img tags instead of placeholder images.`
+      : prompt;
+
     const orchestrator = new LandingPageOrchestrator({
       brandKit,
-      requirements: prompt,
+      requirements: orchestratorRequirements,
       model: selectedModel,
     });
 

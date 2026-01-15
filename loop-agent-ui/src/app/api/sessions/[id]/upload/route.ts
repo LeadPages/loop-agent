@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAttachment, getSession } from "@/lib/db";
+import { createAttachment, getSession, updateAttachmentAnalysis } from "@/lib/db";
+import { analyzeImage } from "@/lib/landing-page/sdk-client";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
@@ -178,6 +179,7 @@ export async function POST(
       mimeType: string;
       sizeBytes: number;
       url: string;
+      analysis: string | null;
     }> = [];
 
     for (const file of files) {
@@ -262,6 +264,19 @@ export async function POST(
       // Generate URL for accessing the file using the stored filename
       const url = `/api/sessions/${sessionId}/uploads/${finalFilename}`;
 
+      // Analyze the image with Claude to extract context
+      let analysis: string | null = null;
+      try {
+        console.log(`[upload] Analyzing image: ${finalFilename}`);
+        analysis = await analyzeImage(storedPath, detectedMimeType);
+        // Store analysis in database
+        updateAttachmentAnalysis(attachmentId, analysis);
+        console.log(`[upload] Image analysis complete for: ${finalFilename}`);
+      } catch (analysisError) {
+        console.error(`[upload] Failed to analyze image ${finalFilename}:`, analysisError);
+        // Continue without analysis - it's not critical
+      }
+
       attachments.push({
         id: attachment.id,
         filename: attachment.filename,
@@ -269,6 +284,7 @@ export async function POST(
         mimeType: attachment.mime_type,
         sizeBytes: attachment.size_bytes,
         url,
+        analysis,
       });
     }
 

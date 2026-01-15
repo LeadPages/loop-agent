@@ -185,6 +185,35 @@ export async function sdkPrompt(
 }
 
 /**
+ * Analyze an image and return a structured description.
+ * Used when images are uploaded to extract context for landing page generation.
+ */
+export async function analyzeImage(imagePath: string, mimeType: string): Promise<string> {
+  if (!isSupportedImageType(mimeType)) {
+    throw new Error(`Unsupported image type: ${mimeType}`);
+  }
+
+  const systemPrompt = `You are an image analysis assistant. Analyze the provided image and return a concise but comprehensive description that will be used to generate a landing page.
+
+Focus on:
+1. **Subject/Content**: What is shown in the image (products, people, logos, scenes)
+2. **Colors**: Dominant colors, color palette, specific hex values if identifiable
+3. **Style**: Visual style (modern, vintage, minimalist, bold, elegant, playful)
+4. **Brand Elements**: Any logos, text, brand names visible
+5. **Industry/Context**: What industry or business type this suggests
+6. **Mood/Feeling**: The emotional tone conveyed
+7. **Suggested Use**: How this image could be used on a landing page (hero, product showcase, background, logo)
+
+Be specific and actionable. This description will directly inform design decisions.`;
+
+  const userPrompt = `Analyze this image for use in landing page generation. Provide a structured analysis.`;
+
+  const images: ImageInput[] = [{ path: imagePath, mimeType }];
+
+  return await sdkPrompt(userPrompt, { systemPrompt, model: "claude-sonnet-4-20250514" }, images);
+}
+
+/**
  * Extract JSON from response text.
  * Handles direct JSON, code blocks, and embedded JSON objects.
  */

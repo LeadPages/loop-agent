@@ -21,6 +21,7 @@ export function ImagePreview({
   onRemove,
 }: ImagePreviewProps) {
   const [modalImage, setModalImage] = useState<Attachment | null>(null);
+  const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
 
   if (attachments.length === 0) return null;
 
@@ -29,64 +30,120 @@ export function ImagePreview({
     return attachment.url;
   };
 
+  // Check if any attachment has analysis
+  const hasAnyAnalysis = attachments.some((a) => a.analysis);
+
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {attachments.map((attachment) => (
-          <div
-            key={attachment.id}
-            className="group relative rounded-lg border border-border bg-muted/50 p-1"
-          >
-            <button
-              type="button"
-              onClick={() => setModalImage(attachment)}
-              className="block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          {attachments.map((attachment) => (
+            <div
+              key={attachment.id}
+              className="group relative rounded-lg border border-border bg-muted/50 p-1"
             >
-              <img
-                src={getImageUrl(attachment)}
-                alt={attachment.filename}
-                className="h-16 w-16 rounded-md object-cover"
-              />
-            </button>
-            {onRemove && (
               <button
                 type="button"
-                onClick={() => onRemove(attachment.id)}
-                className={cn(
-                  "absolute -right-2 -top-2 rounded-full bg-destructive p-1",
-                  "text-white opacity-0 transition-opacity",
-                  "group-hover:opacity-100 focus:opacity-100",
-                  "focus:outline-none focus:ring-2 focus:ring-ring"
-                )}
-                title="Remove"
+                onClick={() => setModalImage(attachment)}
+                className="block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
               >
-                <svg
-                  className="h-3 w-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <img
+                  src={getImageUrl(attachment)}
+                  alt={attachment.filename}
+                  className="h-16 w-16 rounded-md object-cover"
+                />
+              </button>
+              {/* Analysis indicator */}
+              {attachment.analysis && (
+                <button
+                  type="button"
+                  onClick={() => setExpandedAnalysis(
+                    expandedAnalysis === attachment.id ? null : attachment.id
+                  )}
+                  className={cn(
+                    "absolute -left-1 -bottom-1 rounded-full p-1",
+                    "bg-primary text-primary-foreground",
+                    "focus:outline-none focus:ring-2 focus:ring-ring",
+                    expandedAnalysis === attachment.id && "bg-primary/80"
+                  )}
+                  title="View image analysis"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              )}
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(attachment.id)}
+                  className={cn(
+                    "absolute -right-2 -top-2 rounded-full bg-destructive p-1",
+                    "text-white opacity-0 transition-opacity",
+                    "group-hover:opacity-100 focus:opacity-100",
+                    "focus:outline-none focus:ring-2 focus:ring-ring"
+                  )}
+                  title="Remove"
+                >
+                  <svg
+                    className="h-3 w-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+              <div className="mt-1 max-w-16 truncate text-center text-xs text-muted-foreground">
+                <div className="truncate" title={attachment.filename}>
+                  {attachment.filename}
+                </div>
+                {attachment.sizeBytes && (
+                  <div className="text-xs opacity-70">
+                    {formatFileSize(attachment.sizeBytes)}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Expanded analysis panel */}
+        {expandedAnalysis && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-primary">Image Analysis</span>
+              <button
+                type="button"
+                onClick={() => setExpandedAnalysis(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-            )}
-            <div className="mt-1 max-w-16 truncate text-center text-xs text-muted-foreground">
-              <div className="truncate" title={attachment.filename}>
-                {attachment.filename}
-              </div>
-              {attachment.sizeBytes && (
-                <div className="text-xs opacity-70">
-                  {formatFileSize(attachment.sizeBytes)}
-                </div>
-              )}
+            </div>
+            <div className="whitespace-pre-wrap text-muted-foreground">
+              {attachments.find((a) => a.id === expandedAnalysis)?.analysis}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Summary indicator when analysis exists */}
+        {hasAnyAnalysis && !expandedAnalysis && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <svg className="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Image{attachments.filter((a) => a.analysis).length > 1 ? 's' : ''} analyzed - click info icon to view details
+          </div>
+        )}
       </div>
 
       {/* Full-size modal */}
