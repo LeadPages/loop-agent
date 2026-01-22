@@ -4,6 +4,8 @@ import path from "path";
 import { createWorkspace, getWorkspacePath } from "./workspace";
 import { getAgentConfig, DEFAULT_AGENT_ID } from "./agents";
 import { generateBrandKit, LandingPageOrchestrator } from "./landing-page";
+import { LandingPageOrchestratorV2 } from "./landing-page/orchestrator-v2";
+import { getHeroLayout } from "./landing-page/prompts/hero-layout-patterns";
 import { getAttachmentsBySession, type DbAttachment } from "./db";
 import type { ImageInput } from "./landing-page/sdk-client";
 
@@ -34,11 +36,19 @@ export async function* runAgent(
   // Get agent configuration
   const agentConfig = getAgentConfig(agentId) || getAgentConfig(DEFAULT_AGENT_ID)!;
 
-  // Special handling for landing page generator
+  // Special handling for landing page generator (v1)
   if (agentId === "landing-page-generator") {
     // Fetch attachments for the session to pass images to the brand kit generator
     const attachments = getAttachmentsBySession(sessionId);
     yield* runLandingPageGenerator(sessionId, prompt, model, attachments);
+    return;
+  }
+
+  // Special handling for landing page generator v2 (with hero layout diversity)
+  if (agentId === "landing-page-generator-v2") {
+    // Fetch attachments for the session to pass images to the brand kit generator
+    const attachments = getAttachmentsBySession(sessionId);
+    yield* runLandingPageGeneratorV2(sessionId, prompt, model, attachments);
     return;
   }
 
@@ -347,6 +357,168 @@ The page includes:
     yield {
       type: "error",
       content: `Landing page generation failed: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Run the landing page generator V2 with hero layout diversity
+ */
+async function* runLandingPageGeneratorV2(
+  sessionId: string,
+  prompt: string,
+  model?: string,
+  attachments?: DbAttachment[]
+): AsyncGenerator<SSEEvent> {
+  const cwd = createWorkspace(sessionId);
+  const selectedModel = model || "claude-sonnet-4-5-20250929";
+
+  try {
+    yield {
+      type: "system",
+      sessionId,
+      model: selectedModel,
+      tools: ["LandingPageOrchestratorV2"],
+    };
+
+    // Process attachments to get images, analysis, and URLs
+    const processedAttachments = attachments && attachments.length > 0
+      ? processAttachments(sessionId, attachments)
+      : [];
+
+    const images = processedAttachments.length > 0
+      ? processedAttachments.map((p) => p.image)
+      : undefined;
+
+    // Build context from stored image analysis
+    const imageAnalysisContext = processedAttachments
+      .filter((p) => p.analysis)
+      .map((p) => `### ${p.filename}\n${p.analysis}`)
+      .join("\n\n");
+
+    // Build image URLs for embedding
+    const imageUrls = processedAttachments.map((p) => ({
+      filename: p.filename,
+      url: p.url,
+    }));
+
+    // Step 1: Generate brand kit
+    yield {
+      type: "assistant",
+      content: processedAttachments.length > 0
+        ? `[V2] Analyzing your input and ${processedAttachments.length} image(s) to extract brand information...`
+        : "[V2] Analyzing your input to extract brand information...",
+    };
+
+    yield {
+      type: "tool",
+      toolName: "BrandKitGenerator",
+      content: processedAttachments.length > 0
+        ? `Extracting brand kit from text and ${processedAttachments.length} image(s)...\n\nImage analysis available:\n${imageAnalysisContext.substring(0, 500)}...`
+        : "Extracting brand kit from unstructured text...",
+    };
+
+    // Enhance prompt with image analysis context
+    const enhancedPrompt = imageAnalysisContext
+      ? `${prompt}\n\n## Uploaded Image Analysis\n${imageAnalysisContext}\n\n## Available Images for Embedding\n${imageUrls.map((i) => `- ${i.filename}: ${i.url}`).join("\n")}`
+      : prompt;
+
+    const { brandKit, confidence, warnings } = await generateBrandKit(enhancedPrompt, undefined, images);
+
+    yield {
+      type: "assistant",
+      content: `Brand kit extracted (${Math.round(confidence * 100)}% confidence):
+- Business: ${brandKit.name}
+- Colors: Primary ${brandKit.colors.primary}, Secondary ${brandKit.colors.secondary}, Accent ${brandKit.colors.accent}
+- Typography: ${brandKit.typography.headingFont} / ${brandKit.typography.bodyFont}
+- Style: ${brandKit.personalityTraits.join(", ")}
+${warnings.length > 0 ? `\nWarnings: ${warnings.join(", ")}` : ""}`,
+    };
+
+    // Step 2: Run the V2 orchestrator with hero layout awareness
+    yield {
+      type: "assistant",
+      content: "[V2] Generating landing page with hero layout diversity...",
+    };
+
+    // Include image URLs in requirements so they can be embedded
+    const orchestratorRequirements = imageUrls.length > 0
+      ? `${prompt}\n\n## Available Images to Embed\nThe following uploaded images should be used in the landing page where appropriate:\n${imageUrls.map((i) => `- ${i.filename}: ${i.url}`).join("\n")}\n\nUse these actual image URLs in img tags instead of placeholder images.`
+      : prompt;
+
+    const orchestrator = new LandingPageOrchestratorV2({
+      brandKit,
+      requirements: orchestratorRequirements,
+      model: selectedModel,
+      previousHeroLayouts: [], // TODO: Track across sessions for variety
+    });
+
+    let finalHtml = "";
+    let sections: string[] = [];
+    let heroLayout: string | null = null;
+
+    for await (const progress of orchestrator.generate()) {
+      yield {
+        type: "tool",
+        toolName: "LandingPageOrchestratorV2",
+        content: `[${progress.state}] ${progress.message}`,
+      };
+
+      if (progress.state === "complete" && progress.details?.sections) {
+        sections = progress.details.sections as string[];
+        heroLayout = (progress.details.heroLayout as string) || null;
+      }
+    }
+
+    finalHtml = orchestrator.getFinalHtml() || "";
+    heroLayout = orchestrator.getSelectedHeroLayout();
+
+    // Get layout details for display
+    const layoutDetails = heroLayout ? getHeroLayout(heroLayout) : null;
+
+    // Step 3: Write to workspace with timestamped filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const filename = `landing-page-v2-${timestamp}.html`;
+    const outputPath = path.join(cwd, filename);
+    fs.writeFileSync(outputPath, finalHtml);
+
+    yield {
+      type: "tool",
+      toolName: "Write",
+      content: `Wrote ${finalHtml.length} characters to ${filename}`,
+    };
+
+    yield {
+      type: "assistant",
+      content: `Landing page generated successfully with V2!
+
+**Hero Layout:** ${layoutDetails?.name || heroLayout} - ${layoutDetails?.description || "Custom layout"}
+
+**Sections:** ${sections.join(", ")}
+
+**File:** ${filename} (${finalHtml.length} characters)
+
+The page includes:
+- ${layoutDetails?.name || "Selected"} hero layout (V2 feature)
+- Responsive design (mobile-first)
+- Tailwind CSS via CDN
+- Brand-consistent colors and typography
+- Proper hover states on interactive elements
+- Only div, img, a, button elements (semantic markup via Tailwind)`,
+    };
+
+    yield {
+      type: "result",
+      result: "Landing page generated with V2",
+      costUsd: 0, // TODO: Track actual cost
+      turns: 1,
+      previewFile: filename,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    yield {
+      type: "error",
+      content: `Landing page generation (V2) failed: ${errorMessage}`,
     };
   }
 }

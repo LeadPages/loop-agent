@@ -422,7 +422,12 @@ export async function generateHtml(
   const htmlResult = extractJsonFromText(responseText);
 
   if (!htmlResult || !htmlResult.html) {
-    throw new Error("HTMLGenerator failed to return valid HTML");
+    // Log diagnostic info for debugging
+    console.error("[HTMLGenerator] Failed to extract valid HTML from response");
+    console.error("[HTMLGenerator] Response length:", responseText?.length || 0);
+    console.error("[HTMLGenerator] Response preview:", responseText?.substring(0, 500) || "(empty)");
+    console.error("[HTMLGenerator] Parsed result:", htmlResult);
+    throw new Error(`HTMLGenerator failed to return valid HTML. Response length: ${responseText?.length || 0}, has html: ${!!htmlResult?.html}`);
   }
 
   return htmlResult as unknown as HTMLGenerationResult;

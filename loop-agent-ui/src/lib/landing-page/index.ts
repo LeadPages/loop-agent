@@ -36,6 +36,14 @@ export {
   type OrchestratorProgress,
 } from "./orchestrator";
 
+// Orchestrator V2 exports (with hero layout diversity)
+export {
+  LandingPageOrchestratorV2,
+  generateLandingPageV2,
+  type OrchestratorV2Options,
+  type OrchestratorV2Progress,
+} from "./orchestrator-v2";
+
 // Brand kit generator exports
 export { generateBrandKit } from "./brand-kit-generator";
 
@@ -85,3 +93,25 @@ export {
   createHtmlGeneratorPrompt,
   HTML_GENERATOR_SYSTEM_PROMPT,
 } from "./agents/html-generator";
+
+// V2 Agent exports (with hero layout diversity)
+export {
+  planContentV2,
+  createContentPlannerV2Prompt,
+  CONTENT_PLANNER_V2_SYSTEM_PROMPT,
+} from "./agents/content-planner-v2";
+export {
+  generateHtmlV2,
+  createHtmlGeneratorV2Prompt,
+  HTML_GENERATOR_V2_SYSTEM_PROMPT,
+} from "./agents/html-generator-v2";
+
+// Hero layout patterns exports
+export {
+  HERO_LAYOUTS,
+  LAYOUT_SELECTION_GUIDE,
+  HERO_LAYOUT_PATTERNS_PROMPT,
+  getHeroLayout,
+  selectHeroLayout,
+  type HeroLayout,
+} from "./prompts/hero-layout-patterns";

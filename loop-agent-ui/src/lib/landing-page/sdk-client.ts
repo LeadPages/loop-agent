@@ -215,7 +215,7 @@ Be specific and actionable. This description will directly inform design decisio
 
 /**
  * Extract JSON from response text.
- * Handles direct JSON, code blocks, and embedded JSON objects.
+ * Handles direct JSON, code blocks, embedded JSON objects, and truncated responses.
  */
 export function extractJsonFromText(text: string): Record<string, unknown> | null {
   // Try direct parse
@@ -225,7 +225,7 @@ export function extractJsonFromText(text: string): Record<string, unknown> | nul
     // Continue to other methods
   }
 
-  // Try finding JSON in code blocks
+  // Try finding JSON in code blocks (with closing ```)
   const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
   let match;
 
@@ -237,6 +237,22 @@ export function extractJsonFromText(text: string): Record<string, unknown> | nul
     }
   }
 
+  // Try finding JSON in code blocks WITHOUT closing ``` (truncated response)
+  const truncatedCodeBlockPattern = /```(?:json)?\s*([\s\S]*)/;
+  const truncatedMatch = text.match(truncatedCodeBlockPattern);
+  if (truncatedMatch) {
+    const jsonContent = truncatedMatch[1];
+    try {
+      return JSON.parse(jsonContent);
+    } catch {
+      // JSON is truncated, try to extract html property directly
+      const htmlExtracted = extractHtmlFromTruncatedJson(jsonContent);
+      if (htmlExtracted) {
+        return { html: htmlExtracted, sections: {}, _truncated: true };
+      }
+    }
+  }
+
   // Try finding JSON object
   const jsonObjPattern = /\{[\s\S]*\}/;
   const objMatch = text.match(jsonObjPattern);
@@ -245,8 +261,54 @@ export function extractJsonFromText(text: string): Record<string, unknown> | nul
     try {
       return JSON.parse(objMatch[0]);
     } catch {
-      // Failed to parse
+      // JSON might be truncated, try to extract html
+      const htmlExtracted = extractHtmlFromTruncatedJson(objMatch[0]);
+      if (htmlExtracted) {
+        return { html: htmlExtracted, sections: {}, _truncated: true };
+      }
     }
+  }
+
+  return null;
+}
+
+/**
+ * Extract HTML string from truncated JSON.
+ * Handles cases where the model output was cut off mid-response.
+ */
+function extractHtmlFromTruncatedJson(text: string): string | null {
+  // Look for "html": "..." pattern and extract the HTML string
+  // The HTML starts with <!DOCTYPE or <html
+  const htmlStartPattern = /"html"\s*:\s*"(<!DOCTYPE[\s\S]*?)(?:"\s*[,}]|$)/;
+  const match = text.match(htmlStartPattern);
+
+  if (match && match[1]) {
+    let html = match[1];
+
+    // Unescape JSON string escapes
+    try {
+      // Add quotes back and parse as JSON string to unescape
+      html = JSON.parse(`"${html}"`);
+    } catch {
+      // If that fails, do basic unescaping
+      html = html
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\');
+    }
+
+    // If HTML is truncated, try to close it properly
+    if (!html.includes('</html>')) {
+      // Close any open tags we can detect
+      if (!html.includes('</body>')) {
+        html += '\n</body>';
+      }
+      html += '\n</html>';
+      console.warn('[extractJsonFromText] HTML was truncated, added closing tags');
+    }
+
+    return html;
   }
 
   return null;
