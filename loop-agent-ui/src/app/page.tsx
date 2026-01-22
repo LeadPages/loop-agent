@@ -5,7 +5,7 @@ import { Sidebar, Session } from "@/components/dashboard/sidebar";
 import { Chat, Message, type Attachment } from "@/components/dashboard/chat";
 import { type Agent } from "@/components/dashboard/agent-selector";
 
-const DEFAULT_AGENT_ID = "landing-page-generator";
+const DEFAULT_AGENT_ID = "landing-page-generator-v2";
 const DEFAULT_MODEL_ID = "claude-sonnet-4-5-20250929";
 const ACCESS_CODE = process.env.NEXT_PUBLIC_ACCESS_CODE || "demo2024";
 
@@ -213,11 +213,15 @@ export default function Dashboard() {
 
   const handleCreateSession = useCallback(async () => {
     try {
+      // Get the selected agent's name for the session
+      const selectedAgent = agents.find((a) => a.id === selectedAgentId);
+      const sessionName = selectedAgent?.name || "Session";
+
       const response = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `Session ${sessions.length + 1}`,
+          name: sessionName,
           agentId: selectedAgentId,
         }),
       });
@@ -234,7 +238,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Failed to create session:", error);
     }
-  }, [sessions.length, selectedAgentId]);
+  }, [agents, selectedAgentId]);
 
   const handleSendMessage = useCallback(
     async (content: string, attachments?: Attachment[]) => {

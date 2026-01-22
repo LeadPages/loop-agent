@@ -106,4 +106,4 @@ export function listAgentConfigs(): AgentConfig[] {
 }
 
 // Default agent ID
-export const DEFAULT_AGENT_ID = "landing-page-generator";
+export const DEFAULT_AGENT_ID = "landing-page-generator-v2";
