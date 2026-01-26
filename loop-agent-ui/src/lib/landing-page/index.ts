@@ -106,6 +106,79 @@ export {
   HTML_GENERATOR_V2_SYSTEM_PROMPT,
 } from "./agents/html-generator-v2";
 
+// V3 CraftJSON exports
+export {
+  generateCraftJSON,
+  generateCraftJSONFromPlan,
+  createCraftJSONGeneratorPrompt,
+  createCraftJSONGeneratorPromptFromPlan,
+  CRAFT_JSON_GENERATOR_SYSTEM_PROMPT,
+} from "./agents/craft-json-generator";
+
+// V3 CraftJSON Planner exports
+export {
+  generatePagePlan,
+  validatePagePlan,
+  createPlannerPrompt,
+  CRAFT_JSON_PLANNER_SYSTEM_PROMPT,
+  type PagePlan,
+  type PlannedSection,
+  type PlannedElement,
+  type SectionType,
+  type HeroLayout as PlannerHeroLayout,
+  type FeaturesLayout,
+  type GenericLayout,
+  type ElementPurpose,
+} from "./agents/craft-json-planner";
+
+// Orchestrator V3 exports (CraftJSON-based with planning)
+export {
+  LandingPageOrchestratorV3,
+  generateLandingPageV3,
+  type OrchestratorV3Options,
+  type OrchestratorV3Progress,
+  type OrchestratorV3Result,
+  type OrchestratorV3State,
+} from "./orchestrator-v3";
+
+// CraftJSON module exports
+export {
+  // Types
+  type RGBA,
+  type CraftJSON,
+  type CraftNode,
+  type AgentPageInput,
+  type AgentSection,
+  type AgentElement,
+  type CraftJSONGenerationResult,
+  type RenderResult,
+  // XML-Craft types
+  type ConversionContext,
+  type ValidationError,
+  type TRBL,
+  type GradientBackground,
+  type ParsedClickEvent,
+  type ParsedTextParagraph,
+  type ParsedTextSpan,
+  // Utilities
+  expandToCraftJSON,
+  validateAgentInput,
+  // XML-Craft converters
+  xmlToCraftJson,
+  craftJsonToXml,
+  validateXmlCraft,
+  validateCraftJson,
+  createConversionContext,
+  // XML-Craft constants
+  ELEMENT_TO_RESOLVED_NAME,
+  RESOLVED_NAME_TO_ELEMENT,
+  COMPONENT_DEFAULTS,
+  // Render service
+  renderCraftJSON,
+  renderCraftJSONWithRetry,
+  checkRenderServiceHealth,
+} from "./craft-json";
+
 // Hero layout patterns exports
 export {
   HERO_LAYOUTS,

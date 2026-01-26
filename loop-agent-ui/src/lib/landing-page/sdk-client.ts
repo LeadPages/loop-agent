@@ -225,13 +225,31 @@ export function extractJsonFromText(text: string): Record<string, unknown> | nul
     // Continue to other methods
   }
 
+  // Try stripping markdown code fences first (most common case)
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.slice(7);
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.slice(3);
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.slice(0, -3);
+  }
+  cleaned = cleaned.trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Continue to other methods
+  }
+
   // Try finding JSON in code blocks (with closing ```)
   const jsonPattern = /```(?:json)?\s*([\s\S]*?)\s*```/g;
   let match;
 
   while ((match = jsonPattern.exec(text)) !== null) {
     try {
-      return JSON.parse(match[1]);
+      return JSON.parse(match[1].trim());
     } catch {
       continue;
     }
