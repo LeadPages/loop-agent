@@ -1679,4 +1679,165 @@ All spacing arrays follow `[top, right, bottom, left]` order:
 
 ---
 
+## Critical CraftJSON Patterns (IMPORTANT)
+
+These patterns are essential for proper rendering. Missing any of these can cause layout issues.
+
+### 1. Text Color on Dark Backgrounds
+
+Text color MUST be in the `textStyles` children array, not at the component level:
+
+```json
+{
+  "type": { "resolvedName": "Text" },
+  "props": {
+    "textStyles": [
+      {
+        "type": "paragraph",
+        "children": [
+          {
+            "text": "White text on dark background",
+            "color": { "r": 255, "g": 255, "b": 255, "a": 1 },
+            "textTransform": "none"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Key points:**
+- Color in children array affects the rendered text
+- Always include `textTransform: "none"` in Slate AST
+- For dark backgrounds, explicitly set white color
+
+### 2. Container Width and Flexbox
+
+Containers MUST have `width: "100%"` and proper flexbox settings:
+
+```json
+{
+  "props": {
+    "flexDirection": "column",
+    "alignItems": "center",
+    "width": "100%",
+    "minWidth": 100
+  }
+}
+```
+
+**Key points:**
+- `width: "100%"` is required for proper layout
+- `minWidth: 100` prevents container collapse
+
+### 3. Feature Grid Equal Widths
+
+For feature cards in a grid, use `flex: 1` equivalent:
+
+```json
+{
+  "props": {
+    "fillSpace": "yes",
+    "flexBasis": "0%",
+    "flexGrow": 1
+  }
+}
+```
+
+This ensures all feature cards have equal widths in a row layout.
+
+### 4. Visibility Format
+
+Always include all three breakpoints:
+
+```json
+{
+  "props": {
+    "visibility": {
+      "desktop": true,
+      "tablet": true,
+      "mobile": true
+    }
+  }
+}
+```
+
+### 5. Responsive Overrides (ALWAYS Include)
+
+Always include `tablet: {}` and `mobile: {}` even if empty:
+
+```json
+{
+  "props": {
+    "tablet": {},
+    "mobile": {}
+  }
+}
+```
+
+For responsive sections, include default overrides:
+
+```json
+{
+  "props": {
+    "tablet": {
+      "padding": [40, 30, 40, 30]
+    },
+    "mobile": {
+      "width": "100%",
+      "padding": [30, 20, 30, 20],
+      "flexDirection": "column",
+      "flexBasis": "100%"
+    }
+  }
+}
+```
+
+### 6. Global Styles for Typography
+
+Use `appliedGlobalStyle` with `selectedStyleVariant` for consistent typography:
+
+```json
+{
+  "props": {
+    "appliedGlobalStyle": true,
+    "selectedStyleVariant": "heading.h2"
+  }
+}
+```
+
+Available variants:
+- `heading.h1`, `heading.h2`, `heading.h3`
+- `body.large`, `body.medium`, `body.small`
+
+### 7. Button Click Events
+
+Use the correct format for button actions:
+
+```json
+{
+  "props": {
+    "clickEvent": {
+      "eventType": "open-external-link",
+      "eventData": { "url": "https://example.com", "newTab": true }
+    }
+  }
+}
+```
+
+For no action:
+```json
+{
+  "props": {
+    "clickEvent": {
+      "eventType": "nolink",
+      "eventData": null
+    }
+  }
+}
+```
+
+---
+
 *This document is intended for AI agents generating CraftJSON. For human developers, refer to the component source files in `packages/shared/components/`.*

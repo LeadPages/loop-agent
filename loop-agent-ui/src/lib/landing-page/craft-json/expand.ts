@@ -52,6 +52,11 @@ const DEFAULT_BLACK: RGBA = { r: 0, g: 0, b: 0, a: 1 };
 
 /**
  * Create default ROOT (Page) node
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Page padding should be minimal (0) - sections handle their own padding
+ * - Always include tablet: {} and mobile: {} even if empty
+ * - Use gap: 0 so sections control their own spacing
  */
 function createPageNode(childNodeIds: string[]): PageNode {
   return {
@@ -59,22 +64,28 @@ function createPageNode(childNodeIds: string[]): PageNode {
     isCanvas: true,
     props: {
       fillSpace: "yes",
-      padding: [40, 40, 40, 40],
+      padding: [0, 0, 0, 0], // Sections handle their own padding
       backgroundColor: DEFAULT_WHITE,
+      color: DEFAULT_BLACK,
       radius: 0,
       maxWidth: "100%",
       height: "auto",
-      gap: 24,
+      gap: 0, // Sections control their own spacing
       bgImageScale: 100,
       bgImageOpacity: 100,
       bgImageMode: "fill",
       bgImagePosition: "center center",
+      bgVideoSourceType: "url",
+      bgVideoMode: "fill",
+      bgVideoOpacity: 100,
+      breakpoint: "desktop",
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: {},
       mobile: {},
-      breakpoint: "desktop",
     },
     displayName: "Page",
     custom: { displayName: "Landing Page", isLocked: false },
+    parent: "", // ROOT has empty parent
     hidden: false,
     nodes: childNodeIds,
     linkedNodes: {},
@@ -196,6 +207,13 @@ function getSectionContainerStyle(sectionType: SectionType, layout?: SectionLayo
 
 /**
  * Create default Container node with section-specific styling
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Containers MUST have width: "100%" and proper flexbox settings
+ * - Feature grids need fillSpace: "yes" and flexBasis: "0%" for equal widths
+ * - Always include visibility object with all breakpoints
+ * - Always include tablet: {} and mobile: {} even if empty
+ * - minWidth: 100 is required to prevent collapse
  */
 function createContainerNode(
   parentId: string,
@@ -205,6 +223,7 @@ function createContainerNode(
     layout?: SectionLayout;
     backgroundColor?: RGBA;
     isInnerContainer?: boolean;
+    isFeatureCard?: boolean; // For equal-width feature grid items
   }
 ): ContainerNode {
   const sectionStyle = options?.sectionType
@@ -222,6 +241,26 @@ function createContainerNode(
   // Inner containers (like hero columns) have different styling
   const isInner = options?.isInnerContainer;
 
+  // Feature cards need special styling for equal widths in grid
+  const isFeatureCard = options?.isFeatureCard;
+
+  // CRITICAL: Determine flex properties for equal-width grids
+  let fillSpace: "yes" | "no" = "no";
+  let flexBasis = "100%";
+  let flexGrow = 0;
+
+  if (isInner) {
+    // Two-column hero layout - each column takes 50%
+    fillSpace = "yes";
+    flexBasis = "50%";
+    flexGrow = 1;
+  } else if (isFeatureCard) {
+    // CRITICAL: Feature cards need flex: 1 equivalent for equal widths
+    fillSpace = "yes";
+    flexBasis = "0%"; // 0% basis with flex-grow: 1 = equal widths
+    flexGrow = 1;
+  }
+
   return {
     type: { resolvedName: "Container" },
     isCanvas: true,
@@ -230,10 +269,10 @@ function createContainerNode(
       alignItems: isInner ? "flex-start" : sectionStyle.alignItems,
       justifyContent: isInner ? "center" : sectionStyle.justifyContent,
       gap: isInner ? 16 : sectionStyle.gap,
-      width: "100%",
+      width: "100%", // CRITICAL: Always 100% width
       height: "auto",
       minHeight: isInner ? 0 : sectionStyle.minHeight,
-      minWidth: 100,
+      minWidth: 100, // CRITICAL: Prevent container collapse
       maxWidthUnit: "px",
       maxWidth: isInner ? 9999 : sectionStyle.maxWidth,
       padding: isInner ? [0, 0, 0, 0] : sectionStyle.padding,
@@ -249,9 +288,9 @@ function createContainerNode(
       bgImagePosition: "center center",
       position: "relative",
       zIndex: 0,
-      fillSpace: isInner ? "yes" : "no",
-      flexBasis: isInner ? "50%" : "100%",
-      flexGrow: isInner ? 1 : 0,
+      fillSpace: fillSpace,
+      flexBasis: flexBasis,
+      flexGrow: flexGrow,
       placeholderHeight: 512,
       positionAnchorsState: {
         enabled: false,
@@ -260,10 +299,12 @@ function createContainerNode(
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
       aspectRatioLock: false,
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: isInner ? {} : { padding: [40, 30, 40, 30] },
-      mobile: isInner
+      mobile: isInner || isFeatureCard
         ? { width: "100%", flexBasis: "100%" }
         : { width: "100%", padding: [30, 20, 30, 20], flexDirection: "column" },
       backgroundColor: options?.backgroundColor,
@@ -279,6 +320,11 @@ function createContainerNode(
 
 /**
  * Create Button node from agent input
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Use appliedGlobalStyle: true for consistent button styling
+ * - Always include visibility with all breakpoints
+ * - Always include tablet: {} and mobile: {} even if empty
  */
 function createButtonNode(parentId: string, element: AgentButtonElement): ButtonNode {
   return {
@@ -287,12 +333,13 @@ function createButtonNode(parentId: string, element: AgentButtonElement): Button
     props: {
       fillWidth: false,
       positionAnchorsState: {
+        enabled: false,
         enableTop: false,
+        enableLeft: false,
         enableRight: false,
         enableBottom: false,
-        enableLeft: false,
-        enabled: false,
       },
+      // CRITICAL: Visibility format with all three breakpoints
       visibility: { desktop: true, tablet: true, mobile: true },
       buttonSize: "medium",
       buttonVariant: "primary",
@@ -314,6 +361,7 @@ function createButtonNode(parentId: string, element: AgentButtonElement): Button
       fontStyle: "normal",
       color: element.color || DEFAULT_WHITE,
       backgroundColor: element.backgroundColor || DEFAULT_BLACK,
+      // Use global styles for consistent button styling
       appliedGlobalStyle: true,
       buttonType: "square",
       minWidth: "64px",
@@ -324,9 +372,10 @@ function createButtonNode(parentId: string, element: AgentButtonElement): Button
       height: "auto",
       zIndex: 0,
       clickEvent: {
-        eventType: element.href ? "url" : "nolink",
-        eventData: element.href || null,
+        eventType: element.href ? "open-external-link" : "nolink",
+        eventData: element.href ? { url: element.href, newTab: true } : null,
       },
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: {},
       mobile: {},
     },
@@ -397,7 +446,47 @@ function getDefaultTextAlign(sectionType?: SectionType, purpose?: TextPurpose): 
 }
 
 /**
+ * Map text purpose to global style variant
+ */
+function getGlobalStyleVariant(purpose?: TextPurpose): string {
+  switch (purpose) {
+    case "headline":
+      return "heading.h1";
+    case "section-heading":
+      return "heading.h2";
+    case "subheadline":
+      return "body.large";
+    case "logo":
+      return "heading.h3";
+    case "feature-title":
+      return "heading.h3";
+    case "feature-description":
+      return "body.medium";
+    case "testimonial-quote":
+      return "body.large";
+    case "testimonial-author":
+      return "body.small";
+    case "stat-number":
+      return "heading.h1";
+    case "stat-label":
+      return "body.small";
+    case "faq-question":
+      return "heading.h3";
+    case "faq-answer":
+      return "body.medium";
+    case "body-text":
+    default:
+      return "body.medium";
+  }
+}
+
+/**
  * Create Text node from agent input
+ *
+ * CRITICAL CraftJSON Pattern:
+ * - Text color on dark backgrounds MUST be in the textStyles children array
+ * - Always include textTransform: "none" in Slate AST
+ * - Use appliedGlobalStyle: true with selectedStyleVariant for consistent typography
  */
 function createTextNode(parentId: string, element: AgentTextElement, sectionType?: SectionType): TextNode {
   // Get typography based on purpose, with explicit overrides taking precedence
@@ -405,6 +494,10 @@ function createTextNode(parentId: string, element: AgentTextElement, sectionType
 
   // Determine text alignment: explicit > section-based default
   const textAlign = element.textAlign || getDefaultTextAlign(sectionType, element.purpose);
+
+  // CRITICAL: Color MUST be in the textStyles children for proper rendering
+  // This is especially important for text on dark backgrounds
+  const textColor = element.color || DEFAULT_BLACK;
 
   const textStyle: TextStyleParagraph = {
     type: "paragraph",
@@ -414,10 +507,10 @@ function createTextNode(parentId: string, element: AgentTextElement, sectionType
         fontWeight: element.fontWeight || typography.fontWeight,
         fontFamily: "Inter",
         fontStyle: typography.fontStyle || "normal",
-        textTransform: "none",
+        textTransform: "none", // CRITICAL: Always include textTransform
         letterSpacing: 0,
         fontSize: element.fontSize || typography.fontSize,
-        color: element.color || DEFAULT_BLACK,
+        color: textColor, // CRITICAL: Color in children for dark backgrounds
       },
     ],
   };
@@ -428,6 +521,23 @@ function createTextNode(parentId: string, element: AgentTextElement, sectionType
     props: {
       textStyles: [textStyle],
       textAlign: textAlign,
+      lineHeight: 1.5,
+      width: "100%",
+      height: "auto",
+      maxWidth: 1200,
+      maxWidthUnit: "px",
+      padding: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      borderRadius: [0, 0, 0, 0],
+      shadow: 0,
+      position: "relative",
+      zIndex: 0,
+      fillSpace: "yes",
+      flexBasis: "100%",
+      // Use global styles for consistent typography
+      appliedGlobalStyle: true,
+      selectedStyleVariant: getGlobalStyleVariant(element.purpose),
+      htmlContent: "",
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -435,7 +545,7 @@ function createTextNode(parentId: string, element: AgentTextElement, sectionType
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      visibility: { desktop: true, tablet: true, mobile: true },
       tablet: {},
       mobile: {},
     },
@@ -450,6 +560,11 @@ function createTextNode(parentId: string, element: AgentTextElement, sectionType
 
 /**
  * Create Image node from agent input
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Always include visibility with all breakpoints
+ * - Always include tablet: {} and mobile: {} with responsive overrides
+ * - Use fillSpace and flexBasis for proper sizing in layouts
  */
 function createImageNode(parentId: string, element: AgentImageElement): ImageNode {
   return {
@@ -461,6 +576,26 @@ function createImageNode(parentId: string, element: AgentImageElement): ImageNod
       width: element.width || "100%",
       height: element.height || "400px",
       fitType: "cover",
+      minWidth: 0,
+      minHeight: 0,
+      maxWidth: 1200,
+      maxWidthUnit: "px",
+      padding: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      borderRadius: [0, 0, 0, 0],
+      borderWidth: 0,
+      opacity: 1,
+      position: "relative",
+      top: "0px",
+      left: "0px",
+      zIndex: 0,
+      fillSpace: "yes",
+      flexBasis: "100%",
+      flexGrow: 0,
+      aspectRatioLock: false,
+      backgroundSize: "100%",
+      backgroundPosition: "left top",
+      objectPosition: "center center",
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -468,9 +603,15 @@ function createImageNode(parentId: string, element: AgentImageElement): ImageNod
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
+      // CRITICAL: Always include tablet and mobile with responsive overrides
       tablet: {},
-      mobile: {},
+      mobile: {
+        width: "100%",
+        fillSpace: "no",
+        flexBasis: "100%",
+      },
     },
     displayName: "Image",
     custom: { displayName: "Image", isLocked: false },
@@ -483,6 +624,10 @@ function createImageNode(parentId: string, element: AgentImageElement): ImageNod
 
 /**
  * Create Video node from agent input
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Always include visibility with all breakpoints
+ * - Always include tablet: {} and mobile: {} with responsive overrides
  */
 function createVideoNode(parentId: string, element: AgentVideoElement): VideoNode {
   return {
@@ -491,13 +636,30 @@ function createVideoNode(parentId: string, element: AgentVideoElement): VideoNod
     props: {
       url: element.url,
       sourceType: "url",
+      embedCode: "",
       videoProvider: element.provider || "youtube",
       autoplay: false,
       controls: true,
       loop: false,
       muted: false,
+      fitType: "fill",
+      opacity: 1,
       width: "100%",
-      height: "auto",
+      height: "315px",
+      minWidth: 0,
+      minHeight: 0,
+      aspectRatioLock: true,
+      padding: [0, 0, 0, 0],
+      margin: [0, 0, 0, 0],
+      borderRadius: [0, 0, 0, 0],
+      borderWidth: 0,
+      position: "relative",
+      top: "0px",
+      left: "0px",
+      zIndex: 0,
+      fillSpace: "yes",
+      flexBasis: "100%",
+      flexGrow: 0,
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -505,9 +667,15 @@ function createVideoNode(parentId: string, element: AgentVideoElement): VideoNod
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
+      // CRITICAL: Always include tablet and mobile with responsive overrides
       tablet: {},
-      mobile: {},
+      mobile: {
+        width: "100%",
+        fillSpace: "no",
+        flexBasis: "100%",
+      },
     },
     displayName: "Video",
     custom: { displayName: "Video", isLocked: false },
@@ -520,13 +688,19 @@ function createVideoNode(parentId: string, element: AgentVideoElement): VideoNod
 
 /**
  * Create Countdown node from agent input
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Always include visibility with all breakpoints
+ * - Always include tablet: {} and mobile: {} even if empty
  */
 function createCountdownNode(parentId: string, element: AgentCountdownElement): CountdownNode {
   return {
     type: { resolvedName: "Countdown" },
     isCanvas: false,
     props: {
+      mode: "standard",
       dateTime: element.dateTime,
+      type: "default",
       showDays: true,
       showHours: true,
       showMinutes: true,
@@ -535,6 +709,33 @@ function createCountdownNode(parentId: string, element: AgentCountdownElement): 
       labelHours: "Hours",
       labelMinutes: "Minutes",
       labelSeconds: "Seconds",
+      labelFontFamily: "Inter",
+      labelFontWeight: "400",
+      labelFontStyle: "normal",
+      labelFontSize: "12px",
+      labelTextColor: { r: 156, g: 163, b: 175, a: 1 },
+      labelLetterSpacing: 0.05,
+      numberFontFamily: "Inter",
+      numberFontWeight: "700",
+      numberFontStyle: "normal",
+      numberFontSize: "32px",
+      numberTextColor: { r: 255, g: 255, b: 255, a: 1 },
+      numberLetterSpacing: 0,
+      backgroundColor: { r: 0, g: 0, b: 0, a: 1 },
+      gap: 16,
+      width: "100%",
+      height: "auto",
+      minHeight: 64,
+      padding: [16, 24, 16, 24],
+      margin: [0, 0, 0, 0],
+      borderRadius: [8, 8, 8, 8],
+      borderWidth: 0,
+      position: "relative",
+      zIndex: 0,
+      fillSpace: "yes",
+      flexBasis: "100%",
+      clickEvent: { eventType: "nolink", eventData: null },
+      expireEvent: { eventType: "stay-on-page", eventData: null },
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -542,7 +743,9 @@ function createCountdownNode(parentId: string, element: AgentCountdownElement): 
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: {},
       mobile: {},
     },
@@ -557,6 +760,11 @@ function createCountdownNode(parentId: string, element: AgentCountdownElement): 
 
 /**
  * Create Form node from agent input with child fields
+ *
+ * CRITICAL CraftJSON Patterns:
+ * - Always include visibility with all breakpoints
+ * - Always include tablet: {} and mobile: {} even if empty
+ * - Form requires an id property for proper submission handling
  */
 function createFormNodes(
   parentId: string,
@@ -571,15 +779,21 @@ function createFormNodes(
     const fieldId = generateNodeId();
     childIds.push(fieldId);
 
+    const isEmailField = field.type === "email";
     const fieldNode: CraftNode = {
-      type: { resolvedName: field.type === "email" ? "FormEmailField" : "FormTextField" },
+      type: { resolvedName: isEmailField ? "FormEmailField" : "FormTextField" },
       isCanvas: false,
       props: {
-        label: field.label || (field.type === "email" ? "Email" : "Name"),
-        placeholder: field.placeholder || (field.type === "email" ? "Enter your email" : "Enter your name"),
+        id: fieldId,
+        inputType: isEmailField ? "email" : "text",
+        label: field.label || (isEmailField ? "Email" : "Name"),
+        showLabel: false,
+        placeholder: field.placeholder || (isEmailField ? "Enter your email" : "Enter your name"),
         required: true,
-        width: "100%",
-        height: "48px",
+        hidden: false,
+        helpText: "",
+        showHelpText: false,
+        ...(isEmailField ? { primaryEmailField: true } : { enforceCharacterLimit: false }),
         positionAnchorsState: {
           enabled: false,
           enableTop: false,
@@ -587,12 +801,14 @@ function createFormNodes(
           enableRight: false,
           enableBottom: false,
         },
-        visibility: { mobile: true, tablet: true, desktop: true },
+        // CRITICAL: Visibility format with all three breakpoints
+        visibility: { desktop: true, tablet: true, mobile: true },
+        // CRITICAL: Always include tablet and mobile even if empty
         tablet: {},
         mobile: {},
       },
-      displayName: field.type === "email" ? "FormEmailField" : "FormTextField",
-      custom: { displayName: field.type === "email" ? "Email Field" : "Text Field", isLocked: false },
+      displayName: isEmailField ? "FormEmailField" : "FormTextField",
+      custom: { displayName: isEmailField ? "Email" : "Name", isLocked: false },
       parent: formId,
       hidden: false,
       nodes: [],
@@ -610,16 +826,19 @@ function createFormNodes(
     isCanvas: false,
     props: {
       text: element.submitText,
+      variant: "primary",
+      size: "medium",
+      fullWidth: true,
       backgroundColor: element.submitBackgroundColor || DEFAULT_BLACK,
       color: DEFAULT_WHITE,
       fontFamily: "Inter",
-      fontWeight: "400",
+      fontWeight: "600",
       fontSize: "16px",
       width: "100%",
       height: "auto",
       padding: [12, 24, 12, 24],
       margin: [0, 0, 0, 0],
-      borderRadius: [0, 0, 0, 0],
+      borderRadius: [4, 4, 4, 4],
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -627,12 +846,14 @@ function createFormNodes(
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: {},
       mobile: {},
     },
     displayName: "FormSubmitButton",
-    custom: { displayName: "Submit Button", isLocked: false },
+    custom: { displayName: "Submit", isLocked: false },
     parent: formId,
     hidden: false,
     nodes: [],
@@ -645,8 +866,42 @@ function createFormNodes(
     type: { resolvedName: "Form" },
     isCanvas: true,
     props: {
-      gap: 16,
-      padding: [20, 20, 20, 20],
+      id: formId,
+      name: "Contact Form",
+      followupAction: { type: "remain" },
+      width: "100%",
+      height: "auto",
+      minWidth: 100,
+      minHeight: 64,
+      maxWidth: 500,
+      maxWidthUnit: "px",
+      padding: [16, 16, 16, 16],
+      margin: [0, 0, 0, 0],
+      borderRadius: [8, 8, 8, 8],
+      borderWidth: 1,
+      borderColor: { r: 229, g: 231, b: 235, a: 1 },
+      backgroundColor: { r: 255, g: 255, b: 255, a: 1 },
+      position: "relative",
+      zIndex: 0,
+      fillSpace: "yes",
+      flexBasis: "100%",
+      fieldWidth: "100%",
+      fieldMaxWidth: "100%",
+      fieldMinWidth: "0px",
+      fieldMargin: [0, 0, 16, 0],
+      fieldBorderRadius: [6, 6, 6, 6],
+      fieldInputPadding: [10, 12, 10, 12],
+      fieldLabelFontFamily: "Inter",
+      fieldLabelFontSize: "10px",
+      fieldLabelFontWeight: 500,
+      fieldLabelColor: { r: 87, g: 95, b: 106, a: 1 },
+      fieldInputFontFamily: "Inter",
+      fieldInputFontSize: "14px",
+      fieldInputFontWeight: 500,
+      fieldInputTextColor: { r: 107, g: 114, b: 128, a: 1 },
+      fieldInputBackgroundColor: { r: 255, g: 255, b: 255, a: 1 },
+      fieldInputBorderColor: { r: 209, g: 213, b: 219, a: 1 },
+      fieldInputBorderWidth: 1,
       positionAnchorsState: {
         enabled: false,
         enableTop: false,
@@ -654,7 +909,10 @@ function createFormNodes(
         enableRight: false,
         enableBottom: false,
       },
-      visibility: { mobile: true, tablet: true, desktop: true },
+      // CRITICAL: Visibility format with all three breakpoints
+      visibility: { desktop: true, tablet: true, mobile: true },
+      aspectRatioLock: false,
+      // CRITICAL: Always include tablet and mobile even if empty
       tablet: {},
       mobile: {},
     },

@@ -1,0 +1,1111 @@
+{
+    "version": 11,
+    "ROOT": {
+      "type": {
+        "resolvedName": "Page"
+      },
+      "isCanvas": true,
+      "props": {},
+      "displayName": "Page",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "container_hero",
+        "container_features",
+        "container_cta",
+        "container_footer"
+      ],
+      "linkedNodes": {},
+      "parent": null
+    },
+    "container_hero": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": 32,
+        "padding": [
+          80,
+          20,
+          80,
+          20
+        ],
+        "backgroundColor": {
+          "r": 17,
+          "g": 24,
+          "b": 39,
+          "a": 1
+        },
+        "minHeight": 600
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_hero_headline",
+        "text_hero_subheadline",
+        "container_hero_buttons"
+      ],
+      "linkedNodes": {},
+      "parent": "ROOT",
+      "tablet": {},
+      "mobile": {
+        "padding": [
+          60,
+          16,
+          60,
+          16
+        ]
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_hero_headline": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h1",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Experience Premium Coffee Like Never Before"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "color": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_hero",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_hero_subheadline": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.large",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "From bean to cup, we craft exceptional coffee experiences that awaken your senses. Sourced from the world's finest coffee regions and roasted to perfection."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "maxWidth": 600,
+        "color": {
+          "r": 209,
+          "g": 213,
+          "b": 219,
+          "a": 1
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_hero",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_hero_buttons": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "row",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": 16
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "button_shop_now",
+        "button_learn_more"
+      ],
+      "linkedNodes": {},
+      "parent": "container_hero",
+      "tablet": {},
+      "mobile": {
+        "flexDirection": "column",
+        "gap": 12
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "button_shop_now": {
+      "type": {
+        "resolvedName": "Button"
+      },
+      "isCanvas": false,
+      "props": {
+        "text": "Shop Now",
+        "appliedGlobalStyle": true,
+        "buttonVariant": "primary",
+        "buttonSize": "large",
+        "clickEvent": {
+          "eventType": "open-external-link",
+          "eventData": {
+            "url": "/shop",
+            "newTab": false
+          }
+        }
+      },
+      "displayName": "Button",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_hero_buttons",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "button_learn_more": {
+      "type": {
+        "resolvedName": "Button"
+      },
+      "isCanvas": false,
+      "props": {
+        "text": "Our Story",
+        "appliedGlobalStyle": true,
+        "buttonVariant": "secondary",
+        "buttonSize": "large",
+        "clickEvent": {
+          "eventType": "open-external-link",
+          "eventData": {
+            "url": "/about",
+            "newTab": false
+          }
+        }
+      },
+      "displayName": "Button",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_hero_buttons",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_features": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "flex-start",
+        "gap": 64,
+        "padding": [
+          80,
+          20,
+          80,
+          20
+        ],
+        "backgroundColor": {
+          "r": 249,
+          "g": 250,
+          "b": 251,
+          "a": 1
+        }
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "container_features_header",
+        "container_features_grid"
+      ],
+      "linkedNodes": {},
+      "parent": "ROOT",
+      "tablet": {},
+      "mobile": {
+        "padding": [
+          60,
+          16,
+          60,
+          16
+        ],
+        "gap": 48
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_features_header": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": 16,
+        "width": "100%",
+        "maxWidth": 600
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_features_title",
+        "text_features_subtitle"
+      ],
+      "linkedNodes": {},
+      "parent": "container_features",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_features_title": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h2",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Why Choose Komo Coffee"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_features_header",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_features_subtitle": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.medium",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "We're passionate about delivering the perfect cup every time, with a commitment to quality that runs from our sourcing to your sip."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_features_header",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_features_grid": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "row",
+        "alignItems": "flex-start",
+        "justifyContent": "center",
+        "gap": 32,
+        "width": "100%",
+        "maxWidth": 1200
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "container_feature_1",
+        "container_feature_2",
+        "container_feature_3"
+      ],
+      "linkedNodes": {},
+      "parent": "container_features",
+      "tablet": {
+        "gap": 24
+      },
+      "mobile": {
+        "flexDirection": "column",
+        "gap": 32
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_feature_1": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "flex-start",
+        "gap": 24,
+        "padding": [
+          32,
+          24,
+          32,
+          24
+        ],
+        "backgroundColor": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        },
+        "borderRadius": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "borderWidth": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "borderColor": {
+          "r": 229,
+          "g": 231,
+          "b": 235,
+          "a": 1
+        },
+        "flex": 1
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_feature_1_title",
+        "text_feature_1_description"
+      ],
+      "linkedNodes": {},
+      "parent": "container_features_grid",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_1_title": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h4",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Single Origin Beans"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_1",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_1_description": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.medium",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Carefully selected beans from specific regions, each with its own unique flavor profile and story to tell."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_1",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_feature_2": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "flex-start",
+        "gap": 24,
+        "padding": [
+          32,
+          24,
+          32,
+          24
+        ],
+        "backgroundColor": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        },
+        "borderRadius": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "borderWidth": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "borderColor": {
+          "r": 229,
+          "g": 231,
+          "b": 235,
+          "a": 1
+        },
+        "flex": 1
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_feature_2_title",
+        "text_feature_2_description"
+      ],
+      "linkedNodes": {},
+      "parent": "container_features_grid",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_2_title": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h4",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Artisan Roasting"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_2",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_2_description": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.medium",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Small batch roasting ensures maximum freshness and flavor. Every bean is roasted to perfection by our master roasters."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_2",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_feature_3": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "flex-start",
+        "gap": 24,
+        "padding": [
+          32,
+          24,
+          32,
+          24
+        ],
+        "backgroundColor": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        },
+        "borderRadius": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "borderWidth": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "borderColor": {
+          "r": 229,
+          "g": 231,
+          "b": 235,
+          "a": 1
+        },
+        "flex": 1
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_feature_3_title",
+        "text_feature_3_description"
+      ],
+      "linkedNodes": {},
+      "parent": "container_features_grid",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_3_title": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h4",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Fresh Delivery"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_3",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_feature_3_description": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.medium",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Get your coffee delivered fresh to your door. Subscribe for regular deliveries or order as needed."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%"
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_feature_3",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_cta": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": 32,
+        "padding": [
+          80,
+          20,
+          80,
+          20
+        ],
+        "backgroundColor": {
+          "r": 99,
+          "g": 102,
+          "b": 241,
+          "a": 1
+        }
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_cta_title",
+        "text_cta_subtitle",
+        "button_cta_primary"
+      ],
+      "linkedNodes": {},
+      "parent": "ROOT",
+      "tablet": {},
+      "mobile": {
+        "padding": [
+          60,
+          16,
+          60,
+          16
+        ]
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_cta_title": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h2",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Ready to Elevate Your Coffee Experience?"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "color": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_cta",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_cta_subtitle": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.large",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Join thousands of coffee lovers who have discovered the perfect cup. Start your journey with Komo Coffee today."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "maxWidth": 600,
+        "color": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 0.9
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_cta",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "button_cta_primary": {
+      "type": {
+        "resolvedName": "Button"
+      },
+      "isCanvas": false,
+      "props": {
+        "text": "Start Your Coffee Journey",
+        "appliedGlobalStyle": true,
+        "buttonVariant": "accent",
+        "buttonSize": "large",
+        "clickEvent": {
+          "eventType": "open-external-link",
+          "eventData": {
+            "url": "/shop",
+            "newTab": false
+          }
+        }
+      },
+      "displayName": "Button",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_cta",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "container_footer": {
+      "type": {
+        "resolvedName": "Container"
+      },
+      "isCanvas": true,
+      "props": {
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gap": 16,
+        "padding": [
+          40,
+          20,
+          40,
+          20
+        ],
+        "backgroundColor": {
+          "r": 17,
+          "g": 24,
+          "b": 39,
+          "a": 1
+        }
+      },
+      "displayName": "Container",
+      "custom": {},
+      "hidden": false,
+      "nodes": [
+        "text_footer_brand",
+        "text_footer_copyright"
+      ],
+      "linkedNodes": {},
+      "parent": "ROOT",
+      "tablet": {},
+      "mobile": {
+        "padding": [
+          32,
+          16,
+          32,
+          16
+        ]
+      },
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_footer_brand": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "heading.h3",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Komo Coffee"
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "color": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_footer",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    },
+    "text_footer_copyright": {
+      "type": {
+        "resolvedName": "Text"
+      },
+      "isCanvas": false,
+      "props": {
+        "appliedGlobalStyle": true,
+        "selectedStyleVariant": "body.small",
+        "textStyles": [
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "© 2024 Komo Coffee. All rights reserved. Crafting exceptional coffee experiences since day one."
+              }
+            ]
+          }
+        ],
+        "textAlign": "center",
+        "width": "100%",
+        "color": {
+          "r": 156,
+          "g": 163,
+          "b": 175,
+          "a": 1
+        }
+      },
+      "displayName": "Text",
+      "custom": {},
+      "hidden": false,
+      "nodes": [],
+      "linkedNodes": {},
+      "parent": "container_footer",
+      "tablet": {},
+      "mobile": {},
+      "visibility": {
+        "desktop": true,
+        "tablet": true,
+        "mobile": true
+      }
+    }
+  }

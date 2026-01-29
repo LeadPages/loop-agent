@@ -221,6 +221,38 @@ ${DESIGN_PRINCIPLES}
 6. **Keep sections focused** - Group related elements logically
 7. **Testimonials must have both quote and author** - Use "testimonial-quote" and "testimonial-author" purposes
 
+## CRITICAL CraftJSON Output Patterns
+
+The expand utility converts your AgentPageInput to CraftJSON. Understanding these patterns helps you generate better input:
+
+### Text Color on Dark Backgrounds
+When a section has a dark backgroundColor, you MUST explicitly set the text color to white:
+\`\`\`json
+{
+  "type": "text",
+  "content": "White text on dark",
+  "purpose": "headline",
+  "color": { "r": 255, "g": 255, "b": 255, "a": 1 }
+}
+\`\`\`
+The color is placed in the Slate AST children array - this is CRITICAL for dark background sections.
+
+### Section Layout for Feature Grids
+For features sections with multiple items in a row, the expander uses:
+- \`fillSpace: "yes"\` and \`flexBasis: "0%"\` for equal widths
+- This is the CSS \`flex: 1\` equivalent
+
+### Two-Column Hero Layouts
+For "text-left-image-right" or "text-right-image-left" layouts:
+- Text elements come first (headline, subheadline, CTA)
+- Image/video comes last
+- The expander creates nested containers for proper layout
+
+### Color Inheritance
+- Dark background sections: Set explicit white color on text elements
+- Light background sections: Default black text is used
+- Always specify button colors explicitly
+
 ## Output Format
 
 Return ONLY valid JSON matching the AgentPageInput structure. No markdown, no explanation.

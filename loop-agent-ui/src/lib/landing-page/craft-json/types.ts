@@ -64,10 +64,10 @@ export interface VisibilitySettings {
   desktop: boolean;
 }
 
-// Click event
+// Click event with proper event data structure
 export interface ClickEvent {
-  eventType: "nolink" | "url" | "email" | "phone" | "anchor";
-  eventData: string | null;
+  eventType: "nolink" | "open-external-link" | "open-internal-page" | "scroll-to-element" | "download-file" | "url" | "email" | "phone" | "anchor";
+  eventData: null | string | { url: string; newTab?: boolean } | { pageId: string } | { elementId: string } | { fileUrl: string };
 }
 
 // Responsive overrides
@@ -92,6 +92,7 @@ export interface PageProps extends BaseNodeProps {
   fillSpace: "yes" | "no";
   padding: [number, number, number, number];
   backgroundColor: RGBA;
+  color?: RGBA; // Default text color for the page
   radius: number;
   maxWidth: string;
   height: string;
@@ -100,6 +101,9 @@ export interface PageProps extends BaseNodeProps {
   bgImageOpacity: number;
   bgImageMode: "fill" | "cover" | "contain";
   bgImagePosition: string;
+  bgVideoSourceType?: "url" | "upload";
+  bgVideoMode?: "fill" | "cover" | "contain";
+  bgVideoOpacity?: number;
   breakpoint: "desktop" | "tablet" | "mobile";
 }
 
@@ -175,9 +179,23 @@ export interface ButtonProps extends BaseNodeProps {
 export interface TextProps extends BaseNodeProps {
   textStyles: TextStyleParagraph[];
   textAlign: "left" | "center" | "right";
+  lineHeight?: number;
   width?: string;
+  height?: string;
+  maxWidth?: number;
+  maxWidthUnit?: "px" | "%";
   margin?: [number, number, number, number];
   padding?: [number, number, number, number];
+  borderRadius?: [number, number, number, number];
+  shadow?: number;
+  position?: "relative" | "absolute";
+  zIndex?: number;
+  fillSpace?: "yes" | "no";
+  flexBasis?: string;
+  // Global style support for consistent typography
+  appliedGlobalStyle?: boolean;
+  selectedStyleVariant?: string;
+  htmlContent?: string;
 }
 
 // Image node props
@@ -186,27 +204,70 @@ export interface ImageProps extends BaseNodeProps {
   alt: string;
   width: string;
   height: string;
-  fitType: "cover" | "fill" | "contain";
-  borderRadius?: [number, number, number, number];
+  fitType: "cover" | "fill" | "contain" | "none" | "scale-down" | "tile";
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxWidthUnit?: "px" | "%";
+  padding?: [number, number, number, number];
   margin?: [number, number, number, number];
+  borderRadius?: [number, number, number, number];
+  borderWidth?: number;
+  opacity?: number;
+  position?: "relative" | "absolute";
+  top?: string;
+  left?: string;
+  zIndex?: number;
+  fillSpace?: "yes" | "no";
+  flexBasis?: string;
+  flexGrow?: number;
+  aspectRatioLock?: boolean;
+  backgroundSize?: string;
+  backgroundPosition?: string;
+  objectPosition?: string;
 }
 
 // Video node props
 export interface VideoProps extends BaseNodeProps {
   url: string;
-  sourceType: "url" | "upload";
-  videoProvider: "youtube" | "vimeo" | "other";
+  sourceType: "url" | "embed";
+  embedCode?: string;
+  videoProvider: "youtube" | "vimeo" | "wistia" | "custom" | "other";
   autoplay: boolean;
   controls: boolean;
   loop?: boolean;
   muted?: boolean;
+  fitType?: "fill" | "cover" | "contain";
+  opacity?: number;
   width?: string;
   height?: string;
+  minWidth?: number;
+  minHeight?: number;
+  aspectRatioLock?: boolean;
+  padding?: [number, number, number, number];
+  margin?: [number, number, number, number];
+  borderRadius?: [number, number, number, number];
+  borderWidth?: number;
+  position?: "relative" | "absolute";
+  top?: string;
+  left?: string;
+  zIndex?: number;
+  fillSpace?: "yes" | "no";
+  flexBasis?: string;
+  flexGrow?: number;
+}
+
+// Countdown expire event
+export interface CountdownExpireEvent {
+  eventType: "stay-on-page" | "hide-timer" | "redirect";
+  eventData: null | { url: string };
 }
 
 // Countdown node props
 export interface CountdownProps extends BaseNodeProps {
+  mode?: "standard" | "daily" | "evergreen";
   dateTime: string; // ISO format
+  type?: "default";
   showDays: boolean;
   showHours: boolean;
   showMinutes: boolean;
@@ -215,15 +276,84 @@ export interface CountdownProps extends BaseNodeProps {
   labelHours: string;
   labelMinutes: string;
   labelSeconds: string;
-  numberFontSize?: string;
+  labelFontFamily?: string;
+  labelFontWeight?: string;
+  labelFontStyle?: string;
   labelFontSize?: string;
+  labelTextColor?: RGBA;
+  labelLetterSpacing?: number;
+  numberFontFamily?: string;
+  numberFontWeight?: string;
+  numberFontStyle?: string;
+  numberFontSize?: string;
+  numberTextColor?: RGBA;
+  numberLetterSpacing?: number;
+  backgroundColor?: RGBA;
+  gap?: number;
+  width?: string;
+  height?: string;
+  minHeight?: number;
+  padding?: [number, number, number, number];
+  margin?: [number, number, number, number];
+  borderRadius?: [number, number, number, number];
+  borderWidth?: number;
+  position?: "relative" | "absolute";
+  zIndex?: number;
+  fillSpace?: "yes" | "no";
+  flexBasis?: string;
+  clickEvent?: ClickEvent;
+  expireEvent?: CountdownExpireEvent;
   color?: RGBA;
+}
+
+// Form followup action
+export interface FormFollowupAction {
+  type: "remain" | "redirect" | "message";
+  url?: string;
+  message?: string;
 }
 
 // Form node props
 export interface FormProps extends BaseNodeProps {
+  id?: string;
+  name?: string;
+  followupAction?: FormFollowupAction;
+  width?: string;
+  height?: string;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxWidthUnit?: "px" | "%";
   gap?: number;
   padding?: [number, number, number, number];
+  margin?: [number, number, number, number];
+  borderRadius?: [number, number, number, number];
+  borderWidth?: number;
+  borderColor?: RGBA;
+  backgroundColor?: RGBA;
+  position?: "relative" | "absolute";
+  zIndex?: number;
+  fillSpace?: "yes" | "no";
+  flexBasis?: string;
+  // Field styling
+  fieldWidth?: string;
+  fieldMaxWidth?: string;
+  fieldMinWidth?: string;
+  fieldMargin?: [number, number, number, number];
+  fieldBorderRadius?: [number, number, number, number];
+  fieldInputPadding?: [number, number, number, number];
+  fieldLabelFontFamily?: string;
+  fieldLabelFontSize?: string;
+  fieldLabelFontWeight?: number;
+  fieldLabelColor?: RGBA;
+  fieldInputFontFamily?: string;
+  fieldInputFontSize?: string;
+  fieldInputFontWeight?: number;
+  fieldInputTextColor?: RGBA;
+  fieldInputBackgroundColor?: RGBA;
+  fieldInputBorderColor?: RGBA;
+  fieldInputBorderWidth?: number;
+  aspectRatioLock?: boolean;
 }
 
 // Form field props
